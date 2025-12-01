@@ -1,0 +1,34 @@
+<svg width="1200" height="630" viewBox="0 0 1200 630" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1200" height="630" rx="42" fill="#020617"/>
+  <rect width="1200" height="630" rx="42" fill="url(#paint0_radial_og)"/>
+  <g filter="url(#filter0_d_og)">
+    <rect x="80" y="128" width="1040" height="374" rx="32" fill="rgba(8,16,41,0.9)" stroke="rgba(94,234,212,0.3)" stroke-width="2"/>
+    <text x="120" y="236" fill="#E2E8F0" font-family="Geist, 'Space Grotesk', sans-serif" font-size="72" font-weight="600">
+      ZecRep • Zcash Reputation Oracle
+    </text>
+    <text x="120" y="308" fill="#94A3B8" font-family="Geist, 'Space Grotesk', sans-serif" font-size="32" font-weight="400">
+      Prove shielded Zcash activity, mint a verifiable tier, unlock premium DeFi treatment.
+    </text>
+    <text x="120" y="392" fill="#67E8F9" font-family="Geist, 'Space Grotesk', sans-serif" font-size="28" font-weight="500">
+      Powered by Fhenix FHE • Bronze → Platinum tiers • Soulbound NFTs
+    </text>
+  </g>
+  <defs>
+    <filter id="filter0_d_og" x="60" y="108" width="1080" height="414" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feFlood flood-opacity="0" result="BackgroundImageFix"/>
+      <feGaussianBlur in="BackgroundImage" stdDeviation="10"/>
+      <feComposite in2="SourceAlpha" operator="in" result="effect1_backgroundBlur"/>
+      <feOffset dy="10"/>
+      <feGaussianBlur stdDeviation="20"/>
+      <feColorMatrix type="matrix" values="0 0 0 0 0.047 0 0 0 0 0.141 0 0 0 0 0.384 0 0 0 0.4 0"/>
+      <feBlend mode="normal" in2="effect1_backgroundBlur" result="effect2_dropShadow"/>
+      <feBlend mode="normal" in="SourceGraphic" in2="effect2_dropShadow" result="shape"/>
+    </filter>
+    <radialGradient id="paint0_radial_og" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(252 91) rotate(25) scale(780 540)">
+      <stop stop-color="#0EA5E9" stop-opacity="0.35"/>
+      <stop offset="0.4" stop-color="#059669" stop-opacity="0.2"/>
+      <stop offset="1" stop-color="#020617" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+</svg>
+
