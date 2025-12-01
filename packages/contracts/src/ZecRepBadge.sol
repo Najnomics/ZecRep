@@ -3,7 +3,6 @@ pragma solidity ^0.8.25;
 
 import { AccessControl } from "@openzeppelin/contracts/access/AccessControl.sol";
 import { ERC721 } from "@openzeppelin/contracts/token/ERC721/ERC721.sol";
-import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
 
 /**
  * @title ZecRepBadge
@@ -12,10 +11,9 @@ import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
  *         need to update it whenever the tier configuration changes.
  */
 contract ZecRepBadge is ERC721, AccessControl {
-    using Strings for uint256;
-
     error Soulbound();
     error InvalidTier();
+    error TierArrayLengthMismatch();
 
     bytes32 public constant REGISTRY_ROLE = keccak256("REGISTRY_ROLE");
     bytes32 public constant METADATA_ROLE = keccak256("METADATA_ROLE");
@@ -28,8 +26,10 @@ contract ZecRepBadge is ERC721, AccessControl {
     mapping(uint256 tokenId => uint16) private _tokenScore;
 
     string private _contractURI;
+    uint256 public totalHolders;
 
     event TierURISet(uint8 indexed tier, string uri);
+    event TierURIMultiSet(uint8[] tiers);
     event ContractURISet(string newURI);
     event BadgeUpserted(address indexed account, uint8 tier, uint16 score);
 
@@ -62,6 +62,7 @@ contract ZecRepBadge is ERC721, AccessControl {
             _safeMint(account, tokenId);
             _tokenTier[tokenId] = tier;
             _tokenScore[tokenId] = score;
+            totalHolders += 1;
         }
 
         emit BadgeUpserted(account, tier, score);
@@ -72,6 +73,20 @@ contract ZecRepBadge is ERC721, AccessControl {
         if (tier == 0) revert InvalidTier();
         _tierURIs[tier] = uri;
         emit TierURISet(tier, uri);
+    }
+
+    function setTierURIMulti(uint8[] calldata tiers, string[] calldata uris) external onlyRole(METADATA_ROLE) {
+        uint256 length = tiers.length;
+        if (length == 0 || length != uris.length) {
+            revert TierArrayLengthMismatch();
+        }
+        for (uint256 i = 0; i < length; ++i) {
+            uint8 tier = tiers[i];
+            if (tier == 0) revert InvalidTier();
+            _tierURIs[tier] = uris[i];
+            emit TierURISet(tier, uris[i]);
+        }
+        emit TierURIMultiSet(tiers);
     }
 
     function setContractURI(string calldata newURI) external onlyRole(METADATA_ROLE) {
@@ -95,6 +110,20 @@ contract ZecRepBadge is ERC721, AccessControl {
 
     function contractURI() external view returns (string memory) {
         return _contractURI;
+    }
+
+    function hasBadge(address account) public view returns (bool) {
+        return _ownerOf(uint256(uint160(account))) != address(0);
+    }
+
+    function badgeOf(address account) external view returns (bool exists, uint8 tier, uint16 score, string memory uri) {
+        uint256 tokenId = uint256(uint160(account));
+        address owner = _ownerOf(tokenId);
+        if (owner == address(0)) {
+            return (false, 0, 0, "");
+        }
+        uint8 storedTier = _tokenTier[tokenId];
+        return (true, storedTier, _tokenScore[tokenId], _tierURIs[storedTier]);
     }
 
     /**

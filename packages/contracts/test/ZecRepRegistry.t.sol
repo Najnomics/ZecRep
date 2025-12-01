@@ -103,6 +103,49 @@ contract ZecRepRegistryTest is Test, FheEnabled {
         badge.transferFrom(alice, bob, uint256(uint160(alice)));
     }
 
+    function testBatchSetTierURIs() public {
+        uint8[] memory tiersToUpdate = new uint8[](2);
+        tiersToUpdate[0] = uint8(ZecRepRegistry.TierLevel.BRONZE);
+        tiersToUpdate[1] = uint8(ZecRepRegistry.TierLevel.SILVER);
+        string[] memory newUris = new string[](2);
+        newUris[0] = "ipfs://bronze-v2";
+        newUris[1] = "ipfs://silver-v2";
+
+        vm.prank(admin);
+        badge.setTierURIMulti(tiersToUpdate, newUris);
+        assertEq(badge.tierURI(uint8(ZecRepRegistry.TierLevel.BRONZE)), "ipfs://bronze-v2");
+        assertEq(badge.tierURI(uint8(ZecRepRegistry.TierLevel.SILVER)), "ipfs://silver-v2");
+
+        uint8[] memory invalidTiers = new uint8[](1);
+        invalidTiers[0] = uint8(ZecRepRegistry.TierLevel.GOLD);
+        string[] memory invalidUris = new string[](2);
+        invalidUris[0] = "ipfs://gold";
+        invalidUris[1] = "ipfs://extra";
+        vm.expectRevert(ZecRepBadge.TierArrayLengthMismatch.selector);
+        vm.prank(admin);
+        badge.setTierURIMulti(invalidTiers, invalidUris);
+    }
+
+    function testBadgeHelpersTrackHolders() public {
+        vm.prank(alice);
+        registry.submitProof(encrypt64(4 * ONE_ZEC), keccak256("silver"), uint8(ZecRepRegistry.TierLevel.SILVER));
+        assertTrue(badge.hasBadge(alice));
+        (bool exists, uint8 tier,, string memory uri) = badge.badgeOf(alice);
+        assertTrue(exists);
+        assertEq(tier, uint8(ZecRepRegistry.TierLevel.SILVER));
+        assertEq(uri, badge.tierURI(uint8(ZecRepRegistry.TierLevel.SILVER)));
+        assertEq(badge.totalHolders(), 1);
+
+        vm.prank(alice);
+        registry.submitProof(encrypt64(55 * ONE_ZEC), keccak256("platinum"), uint8(ZecRepRegistry.TierLevel.PLATINUM));
+        assertEq(badge.totalHolders(), 1);
+
+        vm.prank(bob);
+        registry.submitProof(encrypt64(12 * ONE_ZEC), keccak256("gold"), uint8(ZecRepRegistry.TierLevel.GOLD));
+        assertEq(badge.totalHolders(), 2);
+        assertTrue(badge.hasBadge(bob));
+    }
+
     function testConfigureTierOnlyAdmin() public {
         ZecRepRegistry.TierConfigInput memory updated = _tier("Gold", 11 * ONE_ZEC, 55 * ONE_ZEC, 750);
 
