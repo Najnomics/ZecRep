@@ -146,6 +146,30 @@ contract ZecRepRegistryTest is Test, FheEnabled {
         assertTrue(badge.hasBadge(bob));
     }
 
+    function testTierGuards() public {
+        vm.prank(alice);
+        registry.submitProof(encrypt64(12 * ONE_ZEC), keccak256("gold"), uint8(ZecRepRegistry.TierLevel.GOLD));
+        vm.prank(bob);
+        registry.submitProof(encrypt64(2 * ONE_ZEC), keccak256("bronze"), uint8(ZecRepRegistry.TierLevel.BRONZE));
+
+        assertTrue(registry.meetsTier(alice, uint8(ZecRepRegistry.TierLevel.SILVER)));
+        assertTrue(registry.isGoldOrAbove(alice));
+        assertEq(registry.tierOf(alice), uint8(ZecRepRegistry.TierLevel.GOLD));
+
+        assertFalse(registry.meetsTier(bob, uint8(ZecRepRegistry.TierLevel.SILVER)));
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                ZecRepRegistry.TierRequirementNotMet.selector,
+                uint8(ZecRepRegistry.TierLevel.SILVER),
+                uint8(ZecRepRegistry.TierLevel.BRONZE)
+            )
+        );
+        registry.enforceTier(bob, uint8(ZecRepRegistry.TierLevel.SILVER));
+
+        vm.expectRevert("ZecRepRegistry: invalid minimum tier");
+        registry.meetsTier(alice, uint8(ZecRepRegistry.TierLevel.PLATINUM) + 1);
+    }
+
     function testConfigureTierOnlyAdmin() public {
         ZecRepRegistry.TierConfigInput memory updated = _tier("Gold", 11 * ONE_ZEC, 55 * ONE_ZEC, 750);
 

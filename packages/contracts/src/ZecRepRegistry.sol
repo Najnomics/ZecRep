@@ -17,6 +17,7 @@ contract ZecRepRegistry is AccessControl, Permissioned {
     using FHE for euint64;
 
     bytes32 public constant TIER_ADMIN_ROLE = keccak256("TIER_ADMIN_ROLE");
+    error TierRequirementNotMet(uint8 required, uint8 actual);
 
     enum TierLevel {
         NONE,
@@ -138,6 +139,26 @@ contract ZecRepRegistry is AccessControl, Permissioned {
     function userTier(address account) external view returns (uint8 tier, uint16 score, uint64 submittedAt) {
         ProofRecord memory record = _records[account];
         return (record.tier, record.score, record.submittedAt);
+    }
+
+    function tierOf(address account) public view returns (uint8) {
+        return _records[account].tier;
+    }
+
+    function meetsTier(address account, uint8 minimumTier) public view returns (bool) {
+        require(minimumTier != 0 && minimumTier <= highestTier, "ZecRepRegistry: invalid minimum tier");
+        uint8 tier = _records[account].tier;
+        return tier != 0 && tier >= minimumTier;
+    }
+
+    function isGoldOrAbove(address account) external view returns (bool) {
+        return meetsTier(account, uint8(TierLevel.GOLD));
+    }
+
+    function enforceTier(address account, uint8 minimumTier) external view {
+        if (!meetsTier(account, minimumTier)) {
+            revert TierRequirementNotMet(minimumTier, _records[account].tier);
+        }
     }
 
     function configureTier(uint8 tier, TierConfigInput calldata newConfig) external onlyRole(TIER_ADMIN_ROLE) {
