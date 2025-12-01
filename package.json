@@ -1,0 +1,29 @@
+{
+  "name": "zecrep",
+  "private": true,
+  "version": "0.1.0",
+  "description": "ZecRep – privacy-preserving reputation for Zcash activity on Ethereum",
+  "packageManager": "pnpm@10.17.1",
+  "engines": {
+    "node": ">=18.18.0",
+    "pnpm": ">=10.0.0"
+  },
+  "scripts": {
+    "dev": "turbo run dev --parallel",
+    "build": "turbo run build",
+    "lint": "turbo run lint",
+    "test": "turbo run test",
+    "typecheck": "turbo run typecheck",
+    "format": "biome format --write .",
+    "format:check": "biome format --no-write ."
+  },
+  "workspaces": [
+    "apps/*",
+    "packages/*",
+    "services/*"
+  ],
+  "devDependencies": {
+    "@biomejs/biome": "^1.9.4",
+    "turbo": "^2.3.3"
+  }
+}

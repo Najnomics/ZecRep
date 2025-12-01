@@ -1,0 +1,13 @@
+CONTEXT/
+node_modules/
+.pnpm-store/
+.env
+.env.*
+out/
+cache/
+dist/
+coverage/
+**/cache/
+**/out/
+**/coverage/
+

@@ -1,0 +1,27 @@
+{
+  "name": "@zecrep/contracts",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Foundry-based smart contracts and tests for the ZecRep reputation protocol",
+  "scripts": {
+    "build": "forge build",
+    "clean": "forge clean",
+    "test": "forge test -vvv",
+    "coverage": "forge coverage --report lcov",
+    "lint": "pnpm lint:fmt && pnpm lint:solhint && pnpm prettier:check",
+    "lint:fmt": "forge fmt --check",
+    "lint:solhint": "solhint \"src/**/*.sol\" \"script/**/*.sol\" \"test/**/*.sol\"",
+    "format": "forge fmt",
+    "prettier:check": "prettier --check \"**/*.{json,md,yml}\" --ignore-path .prettierignore",
+    "prettier:write": "prettier --write \"**/*.{json,md,yml}\" --ignore-path .prettierignore"
+  },
+  "dependencies": {
+    "@fhenixprotocol/contracts": "0.3.1",
+    "@openzeppelin/contracts": "^5.1.0"
+  },
+  "devDependencies": {
+    "forge-std": "github:foundry-rs/forge-std#v1.8.1",
+    "prettier": "^3.3.3",
+    "solhint": "^3.6.2"
+  }
+}
