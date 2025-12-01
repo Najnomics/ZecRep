@@ -28,3 +28,36 @@ pnpm --filter @zecrep/aggregator start
 
 See `src/config/schema.ts` for required variables. Copy `.env.example` to `.env` and adjust before running againt real nodes.
 
+## HTTP Surface
+
+| Route | Method | Description |
+| --- | --- | --- |
+| `/health` | `GET` | Liveness + current config snapshot (port/log level) |
+| `/` | `GET` | Basic service banner/version |
+| `/api/reputation/tier?address=0x...` | `GET` | Returns the cached tier snapshot for an Ethereum address |
+
+### Tier response (mocked for now)
+
+```json
+{
+  "data": {
+    "address": "0xabc…123",
+    "tier": "GOLD",
+    "score": 500,
+    "encryptedTotal": "0xmockcafe",
+    "volumeZats": 41000000,
+    "updatedAt": "2025-12-01T15:04:05.000Z"
+  }
+}
+```
+
+- `tier` / `score` align with the on-chain badge.
+- `encryptedTotal` will eventually mirror the ciphertext stored in `ZecRepRegistry`.
+- `volumeZats` is expressed in zatoshis; convert by dividing by `1e8`.
+
+### Upcoming extensions
+
+- `POST /api/reputation/submit`: proxy to Cofhe jobs to start a new encrypted proof.
+- `GET /api/reputation/guards/:tier`: convenience endpoint that mirrors the on-chain `enforceTier` checks.
+- Webhook publishing so partner protocols receive tier upgrades in real time.
+
