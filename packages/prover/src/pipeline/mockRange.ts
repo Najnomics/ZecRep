@@ -2,6 +2,7 @@ import type { ProverEnv } from "../config.js";
 import { scanShieldedActivity } from "./scan.js";
 import { generateRangeProof } from "./proof.js";
 import { encryptRangeResult } from "./encrypt.js";
+import type { InEuint64 } from "../lib/fhe.js";
 
 export type ProofInput = {
   address: string;
@@ -13,7 +14,7 @@ export type ProofArtifact = {
   tier: "BRONZE" | "SILVER" | "GOLD" | "PLATINUM";
   proofHash: string;
   encryptedPayload: string;
-  ciphertext: Uint8Array;
+  inEuint64: InEuint64;
   notesScanned: number;
   witness: Awaited<ReturnType<typeof generateRangeProof>>["witness"];
 };
@@ -28,7 +29,7 @@ export async function runMockPipeline(input: ProofInput, env: ProverEnv): Promis
     tier: proof.tier,
     proofHash: proof.proofHash,
     encryptedPayload: encryption.encryptedPayload,
-    ciphertext: encryption.ciphertext,
+    inEuint64: encryption.inEuint64,
     notesScanned: scan.notes,
     witness: proof.witness,
   };
