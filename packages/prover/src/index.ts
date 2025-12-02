@@ -1,15 +1,13 @@
 #!/usr/bin/env node
 import { Command } from "commander";
-import pino from "pino";
 import { loadEnv } from "./config.js";
 import { runMockPipeline } from "./pipeline/mockRange.js";
 import { submitRangeJob, pollRangeJob } from "./lib/aggregatorClient.js";
 import { deriveUnifiedViewingKey } from "./zip32/viewingKey.js";
+import { logger } from "./lib/logger.js";
+import { formatZec, formatTier, formatProofHash } from "./utils/format.js";
 
 const program = new Command();
-const logger = pino({
-  level: process.env.LOG_LEVEL ?? "info"
-});
 
 program
   .name("zecrep-prover")
@@ -33,13 +31,23 @@ program
       env
     );
     logger.info({ artifact }, "Mock pipeline completed");
+    
+    // Pretty print results
+    console.log("\n✅ Proof Pipeline Complete");
+    console.log(`   Tier: ${formatTier(artifact.tier)}`);
+    console.log(`   Proof Hash: ${formatProofHash(artifact.proofHash)}`);
+    console.log(`   Notes Scanned: ${artifact.notesScanned}`);
+    console.log(`   Encrypted Payload: ${artifact.encryptedPayload}`);
+    
     try {
       const job = await submitRangeJob(env, artifact);
       logger.info({ job }, "Submitted mock range job to aggregator");
+      console.log(`\n📤 Job submitted: ${job.job.id}`);
+      console.log(`   Status: ${job.job.status}`);
     } catch (err) {
       logger.warn(err, "Failed to submit job to aggregator");
+      console.error("\n❌ Failed to submit job:", (err as Error).message);
     }
-    console.log(JSON.stringify(artifact, null, 2));
   });
 
 program
