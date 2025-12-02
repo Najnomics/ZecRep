@@ -37,13 +37,19 @@ export class AggregatorClient {
    * Submit a range proof job.
    */
   async submitRangeJob(input: ProofInput): Promise<RangeJob> {
+    // Convert viewing key to hex hash (simplified - in production would use proper hashing)
+    const hexHash = Array.from(new TextEncoder().encode(input.viewingKey))
+      .map((b) => b.toString(16).padStart(2, "0"))
+      .join("")
+      .slice(0, 64);
+    
     const response = await fetch(`${this.baseUrl}/api/jobs/range`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         address: input.address,
         tier: input.tier,
-        proofHash: `0x${Buffer.from(input.viewingKey).toString("hex").slice(0, 64)}`,
+        proofHash: `0x${hexHash.padEnd(64, "0")}`,
       }),
     });
 
