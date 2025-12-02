@@ -2,12 +2,15 @@ import { z } from "zod";
 
 const envSchema = z.object({
   LIGHTWALLETD_URL: z.string().url().default("https://lightwalletd.example.net"),
+  LIGHTWALLETD_USER: z.string().optional(),
+  LIGHTWALLETD_PASSWORD: z.string().optional(),
   FHE_GATEWAY_URL: z.string().url().default("https://api.helium.fhenix.zone"),
   AGGREGATOR_URL: z.string().url().default("http://localhost:4100"),
   REGISTRY_ADDRESS: z
     .string()
     .regex(/^0x[a-fA-F0-9]{40}$/, "Expected 0x-prefixed 20 byte address")
-    .default("0x0000000000000000000000000000000000000000")
+    .default("0x0000000000000000000000000000000000000000"),
+  ENABLE_GRPC: z.string().transform((val) => val === "true").default("false"),
 });
 
 export type ProverEnv = z.infer<typeof envSchema>;
