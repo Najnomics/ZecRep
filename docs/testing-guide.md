@@ -1,36 +1,57 @@
 # Testing Guide
 
-Comprehensive guide for testing ZecRep components.
+Comprehensive testing guide for the ZecRep project.
 
 ## Contract Testing
 
 ### Running Tests
 
 ```bash
-cd packages/contracts
-forge test -vvv
+# Run all contract tests
+pnpm --filter @zecrep/contracts test
+
+# Run specific test file
+pnpm --filter @zecrep/contracts test --match-path "**/ZecRepRegistry.t.sol"
+
+# Run with gas reporting
+pnpm --filter @zecrep/contracts test --gas-report
+
+# Run with verbose output
+pnpm --filter @zecrep/contracts test -vvv
 ```
 
-### Test Coverage
+### Test Structure
 
-```bash
-forge coverage --report lcov
-```
-
-### Key Test Files
-
-- `test/ZecRepRegistry.t.sol` - Registry and badge tests
-- `test/ZecRepGuards.t.sol` - Guard library tests
-- `test/ProtocolAdapters.t.sol` - Protocol integration tests
-
-### FHE Testing
-
-Contracts using FHE require the `FheEnabled` helper:
+Contract tests use Foundry's testing framework:
 
 ```solidity
 contract MyTest is Test, FheEnabled {
     function setUp() public {
         initializeFhe();
+        // Setup test environment
+    }
+    
+    function testSomething() public {
+        // Test logic
+    }
+}
+```
+
+### Mocking FHE Operations
+
+Use the `FheEnabled` contract for FHE testing:
+
+```solidity
+import { FheEnabled } from "../util/FheHelper.sol";
+
+contract MyTest is Test, FheEnabled {
+    function setUp() public {
+        initializeFhe();
+    }
+    
+    function testWithFHE() public {
+        inEuint64 memory encrypted = encrypt64(100);
+        // Test with encrypted values
     }
 }
 ```
@@ -40,81 +61,87 @@ contract MyTest is Test, FheEnabled {
 ### Aggregator Service
 
 ```bash
-cd services/aggregator
-pnpm test
-```
-
-### Integration Tests
-
-```bash
-# Run all service tests
+# Run aggregator tests
 pnpm --filter @zecrep/aggregator test
+
+# Run with watch mode
+pnpm --filter @zecrep/aggregator test:watch
 ```
 
-## Prover CLI Testing
+### Prover CLI
 
 ```bash
-cd packages/prover
-pnpm test
+# Run prover tests
+pnpm --filter @zecrep/prover test
+
+# Test specific module
+pnpm --filter @zecrep/prover test src/pipeline/scan.test.ts
 ```
 
-### Mock Mode
+## Integration Testing
 
-The prover supports mock mode for development:
+### End-to-End Flow
+
+1. **Local Setup**
+   ```bash
+   # Start aggregator
+   pnpm --filter @zecrep/aggregator dev
+   
+   # In another terminal, start prover
+   pnpm --filter @zecrep/prover dev run --address 0x... --viewing-key vk_...
+   ```
+
+2. **Mock Services**
+   - Use mock lightwalletd endpoint
+   - Use mock FHE gateway
+   - Test with deterministic data
+
+### Contract Integration
 
 ```bash
-ENABLE_GRPC=false pnpm dev mock-range --address 0x... --viewing-key vk_...
+# Deploy to local network
+pnpm --filter @zecrep/contracts script script/Deploy.s.sol:DeployZecRep
+
+# Run integration tests
+pnpm --filter @zecrep/contracts test --match-contract "Integration"
 ```
 
-## End-to-End Testing
+## Test Coverage
 
-### Full Pipeline Test
-
-1. Start aggregator service
-2. Run prover CLI
-3. Submit proof via aggregator API
-4. Verify badge minted on-chain
-
-### Local Development
+### Generate Coverage Reports
 
 ```bash
-# Terminal 1: Start aggregator
-pnpm --filter @zecrep/aggregator dev
+# Contracts
+pnpm --filter @zecrep/contracts test --gas-report
 
-# Terminal 2: Run prover
-pnpm --filter @zecrep/prover dev mock-range --address 0x...
-
-# Terminal 3: Check aggregator logs
+# Services
+pnpm --filter @zecrep/aggregator test:coverage
+pnpm --filter @zecrep/prover test:coverage
 ```
 
-## Testing with Real Networks
+## Mock Data
 
-### Fhenix Testnet
+### Deterministic Test Data
 
-```bash
-# Deploy contracts
-REGISTRY_ADDRESS=0x... pnpm --filter @zecrep/contracts script script/Deploy.s.sol:DeployZecRep
+For consistent testing, use deterministic mock data:
 
-# Run prover with testnet config
-FHE_GATEWAY_URL=https://api.helium.fhenix.zone \
-  REGISTRY_ADDRESS=0x... \
-  pnpm --filter @zecrep/prover dev mock-range
-```
+- Viewing keys: Use fixed seeds for ZIP-32 derivation
+- Block ranges: Use specific height ranges
+- Tier thresholds: Use constants from `TIER_THRESHOLDS`
 
-## Mock Services
+## Best Practices
 
-All services support mock modes for testing:
+1. **Test Isolation**: Each test should be independent
+2. **Clean State**: Reset state between tests
+3. **Edge Cases**: Test boundaries and error conditions
+4. **Gas Optimization**: Monitor gas usage in tests
+5. **FHE Testing**: Use mocked FHE for faster tests
 
-- **lightwalletd**: Set `LIGHTWALLETD_URL` to mock endpoint
-- **FHE Gateway**: Set `USE_COFHE=false` for mock encryption
-- **Noir**: Proofs can be mocked without circuit execution
+## Continuous Integration
 
-## CI/CD Testing
-
-Tests run automatically on:
-
+Tests run automatically in CI on:
 - Pull requests
-- Commits to main/develop branches
+- Commits to main/develop
+- Nightly builds
 
-See `.github/workflows/test.yml` for configuration.
-
+See `.github/workflows/test.yml` for CI configuration.
