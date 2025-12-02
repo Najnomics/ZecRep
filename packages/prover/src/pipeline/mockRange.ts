@@ -13,6 +13,7 @@ export type ProofArtifact = {
   tier: "BRONZE" | "SILVER" | "GOLD" | "PLATINUM";
   proofHash: string;
   encryptedPayload: string;
+  ciphertext: Uint8Array;
   notesScanned: number;
   witness: Awaited<ReturnType<typeof generateRangeProof>>["witness"];
 };
@@ -27,6 +28,7 @@ export async function runMockPipeline(input: ProofInput, env: ProverEnv): Promis
     tier: proof.tier,
     proofHash: proof.proofHash,
     encryptedPayload: encryption.encryptedPayload,
+    ciphertext: encryption.ciphertext,
     notesScanned: scan.notes,
     witness: proof.witness,
   };
