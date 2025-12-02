@@ -3,6 +3,7 @@ import { Command } from "commander";
 import pino from "pino";
 import { loadEnv } from "./config.js";
 import { runMockPipeline } from "./pipeline/mockRange.js";
+import { submitRangeJob } from "./lib/aggregatorClient.js";
 
 const program = new Command();
 const logger = pino({
@@ -32,6 +33,12 @@ program
       env
     );
     logger.info({ artifact }, "Mock pipeline completed");
+    try {
+      const job = await submitRangeJob(env, artifact);
+      logger.info({ job }, "Submitted mock range job to aggregator");
+    } catch (err) {
+      logger.warn(err, "Failed to submit job to aggregator");
+    }
     console.log(JSON.stringify(artifact, null, 2));
   });
 

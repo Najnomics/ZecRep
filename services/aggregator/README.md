@@ -35,6 +35,8 @@ See `src/config/schema.ts` for required variables. Copy `.env.example` to `.env`
 | `/health` | `GET` | Liveness + current config snapshot (port/log level) |
 | `/` | `GET` | Basic service banner/version |
 | `/api/reputation/tier?address=0x...` | `GET` | Returns the cached tier snapshot for an Ethereum address |
+| `/api/jobs/range` | `POST` | Creates a mock range-proof job (returns job id + status) |
+| `/api/jobs/range/:id` | `GET` | Poll job status (pending/completed) |
 
 ### Tier response (mocked for now)
 

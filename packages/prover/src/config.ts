@@ -3,6 +3,7 @@ import { z } from "zod";
 const envSchema = z.object({
   LIGHTWALLETD_URL: z.string().url().default("https://lightwalletd.example.net"),
   FHE_GATEWAY_URL: z.string().url().default("https://api.helium.fhenix.zone"),
+  AGGREGATOR_URL: z.string().url().default("http://localhost:4100"),
   REGISTRY_ADDRESS: z
     .string()
     .regex(/^0x[a-fA-F0-9]{40}$/, "Expected 0x-prefixed 20 byte address")

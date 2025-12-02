@@ -12,6 +12,7 @@ describe("runMockPipeline", () => {
       {
         LIGHTWALLETD_URL: "https://example.com",
         FHE_GATEWAY_URL: "https://api.helium.fhenix.zone",
+        AGGREGATOR_URL: "http://localhost:4100",
         REGISTRY_ADDRESS: "0x0000000000000000000000000000000000000000"
       }
     );

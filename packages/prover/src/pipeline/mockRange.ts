@@ -7,6 +7,7 @@ export type ProofInput = {
 };
 
 export type ProofArtifact = {
+  address: string;
   tier: ProofInput["tier"];
   proofHash: string;
   encryptedPayload: string;
@@ -18,6 +19,7 @@ export async function runMockPipeline(input: ProofInput, env: ProverEnv): Promis
   const hash = `0xmock${Buffer.from(input.address.slice(2, 10)).toString("hex")}`;
   const encryptedPayload = `fhe://${env.FHE_GATEWAY_URL}/job/${hash.slice(2, 10)}`;
   return {
+    address: input.address,
     tier: input.tier,
     proofHash: hash,
     encryptedPayload,
