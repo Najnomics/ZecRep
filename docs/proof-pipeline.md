@@ -4,7 +4,7 @@ Guiding choices for the ZecRep prover implementation so we can deliver an end‑
 
 ## Circuit stack
 
-- **Noir**: we will implement the tier range circuit in Noir (Aztec’s Rust-based DSL) because it strikes a balance between ergonomics and performance, and compiles down to highly optimized Barretenberg proofs that can be verified in Solidity. A placeholder circuit now lives in `packages/prover/noir`.
+- **Noir**: we will implement the tier range circuit in Noir (Aztec’s Rust-based DSL) because it strikes a balance between ergonomics and performance, and compiles down to highly optimized Barretenberg proofs that can be verified in Solidity. A placeholder circuit now lives in `packages/prover/noir`, compiled via `pnpm --filter @zecrep/prover noir:build`.
 - Range buckets (Bronze/Silver/Gold/Platinum) will be enforced via simple `assert_leq` constraints over the sum of shielded notes. Future tiers can be added by extending the constants in the circuit.
 - Outputs: public signals include the address commitment + tier bucket; proof will be verified off-chain prior to FHE encryption, and later on-chain via a verifier contract once integrated.
 

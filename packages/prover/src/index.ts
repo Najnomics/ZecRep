@@ -3,7 +3,7 @@ import { Command } from "commander";
 import pino from "pino";
 import { loadEnv } from "./config.js";
 import { runMockPipeline } from "./pipeline/mockRange.js";
-import { submitRangeJob } from "./lib/aggregatorClient.js";
+import { submitRangeJob, pollRangeJob } from "./lib/aggregatorClient.js";
 
 const program = new Command();
 const logger = pino({
@@ -38,6 +38,26 @@ program
       logger.warn(err, "Failed to submit job to aggregator");
     }
     console.log(JSON.stringify(artifact, null, 2));
+  });
+
+program
+  .command("jobs:tail")
+  .description("Tail mock range-proof jobs from the aggregator")
+  .requiredOption("--id <jobId>", "Job id returned from mock-range")
+  .action(async (opts) => {
+    const env = loadEnv();
+    const interval = setInterval(async () => {
+      try {
+        const job = await pollRangeJob(env, opts.id);
+        logger.info({ job }, "Job status");
+        if (job.job.status === "completed") {
+          clearInterval(interval);
+        }
+      } catch (err) {
+        logger.error(err, "Failed to poll job");
+        clearInterval(interval);
+      }
+    }, 1000);
   });
 
 program.parseAsync().catch((err) => {
