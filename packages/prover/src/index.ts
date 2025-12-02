@@ -4,6 +4,7 @@ import pino from "pino";
 import { loadEnv } from "./config.js";
 import { runMockPipeline } from "./pipeline/mockRange.js";
 import { submitRangeJob, pollRangeJob } from "./lib/aggregatorClient.js";
+import { deriveUnifiedViewingKey } from "./zip32/viewingKey.js";
 
 const program = new Command();
 const logger = pino({
@@ -19,14 +20,15 @@ program
   .command("mock-range")
   .description("Run the placeholder range proof pipeline for a wallet (scaffolding step)")
   .requiredOption("--address <hex>", "Ethereum address that will submit the proof")
-  .requiredOption("--viewing-key <vk>", "Zcash unified/full viewing key placeholder")
+  .option("--viewing-key <vk>", "Zcash unified/full viewing key placeholder")
+  .option("--seed <seed>", "Hex-encoded ZIP32 seed (fallback if viewing key not provided)")
   .action(async (opts) => {
     const env = loadEnv();
     logger.info({ env }, "Loaded prover env");
     const artifact = await runMockPipeline(
       {
         address: opts.address,
-        viewingKey: opts.viewingKey
+        viewingKey: opts.viewingKey ?? deriveViewingKeyOrThrow(opts.seed)
       },
       env
     );
@@ -64,4 +66,11 @@ program.parseAsync().catch((err) => {
   logger.error(err, "Prover CLI crashed");
   process.exit(1);
 });
+
+function deriveViewingKeyOrThrow(seed?: string) {
+  if (!seed) {
+    throw new Error("Provide either --viewing-key or --seed");
+  }
+  return deriveUnifiedViewingKey(seed);
+}
 

@@ -11,7 +11,7 @@ Guiding choices for the ZecRep prover implementation so we can deliver an end‑
 ## Data ingestion
 
 - **lightwalletd gRPC** (`CONTEXT/lightwallet-protocol/walletrpc/service.proto`) will supply Sapling/Orchard note data. The prover CLI will:
-  - derive unified viewing keys via ZIP-32 (see `CONTEXT/zip32`);
+  - derive unified viewing keys via ZIP-32 (see `CONTEXT/zip32`); a placeholder helper currently lives at `packages/prover/src/zip32/viewingKey.ts`.
   - call `GetBlockRange` + `GetAddressUtxos` to aggregate the user’s totals without exposing spend keys;
   - cache results locally to avoid rescanning on every proof request.
 
