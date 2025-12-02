@@ -17,6 +17,7 @@ contract ZecRepRegistry is AccessControl, Permissioned {
     using FHE for euint64;
 
     bytes32 public constant TIER_ADMIN_ROLE = keccak256("TIER_ADMIN_ROLE");
+    bytes32 public constant PROOF_VERIFIER_ROLE = keccak256("PROOF_VERIFIER_ROLE");
     error TierRequirementNotMet(uint8 required, uint8 actual);
 
     enum TierLevel {
@@ -104,6 +105,19 @@ contract ZecRepRegistry is AccessControl, Permissioned {
         badge.mintOrUpdate(msg.sender, tier, config.score);
 
         emit ProofSubmitted(msg.sender, tier, config.score, proofHash, record.submittedAt);
+    }
+
+    function recordVerifiedProof(address account, uint8 tier, uint16 score, bytes32 proofHash)
+        external
+        onlyRole(PROOF_VERIFIER_ROLE)
+    {
+        ProofRecord storage record = _records[account];
+        record.tier = tier;
+        record.score = score;
+        record.submittedAt = uint64(block.timestamp);
+        record.proofHash = proofHash;
+        badge.mintOrUpdate(account, tier, score);
+        emit ProofSubmitted(account, tier, score, proofHash, record.submittedAt);
     }
 
     /**

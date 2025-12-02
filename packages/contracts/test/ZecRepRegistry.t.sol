@@ -185,6 +185,17 @@ contract ZecRepRegistryTest is Test, FheEnabled {
         assertEq(config.maxZats, 55 * ONE_ZEC);
     }
 
+    function testRecordVerifiedProof() public {
+        vm.startPrank(admin);
+        registry.grantRole(registry.PROOF_VERIFIER_ROLE(), admin);
+        bytes32 mockProof = keccak256("mock-proof");
+        registry.recordVerifiedProof(bob, uint8(ZecRepRegistry.TierLevel.GOLD), 500, mockProof);
+        vm.stopPrank();
+        (uint8 tier,,) = registry.userTier(bob);
+        assertEq(tier, uint8(ZecRepRegistry.TierLevel.GOLD));
+        assertTrue(badge.hasBadge(bob));
+    }
+
     function _tier(
         string memory name,
         uint64 minZats,
