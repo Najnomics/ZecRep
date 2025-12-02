@@ -8,6 +8,7 @@ import { registerJobRoutes } from "./routes/jobs.js";
 import { registerGuardRoutes } from "./routes/guards.js";
 import { registerMetricsRoutes } from "./routes/metrics.js";
 import { registerWebhookRoutes } from "./routes/webhooks.js";
+import { registerStatsRoutes } from "./routes/stats.js";
 
 export async function buildServer() {
   const env = loadEnv();
@@ -25,6 +26,7 @@ export async function buildServer() {
   await server.register(registerGuardRoutes);
   await server.register(registerMetricsRoutes);
   await server.register(registerWebhookRoutes);
+  await server.register(registerStatsRoutes);
 
   server.get("/", async () => ({
     name: "ZecRep Aggregator",
