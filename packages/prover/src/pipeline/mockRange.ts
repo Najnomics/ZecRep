@@ -14,6 +14,7 @@ export type ProofArtifact = {
   proofHash: string;
   encryptedPayload: string;
   notesScanned: number;
+  witness: Awaited<ReturnType<typeof generateRangeProof>>["witness"];
 };
 
 export async function runMockPipeline(input: ProofInput, env: ProverEnv): Promise<ProofArtifact> {
@@ -27,6 +28,7 @@ export async function runMockPipeline(input: ProofInput, env: ProverEnv): Promis
     proofHash: proof.proofHash,
     encryptedPayload: encryption.encryptedPayload,
     notesScanned: scan.notes,
+    witness: proof.witness,
   };
 }
 

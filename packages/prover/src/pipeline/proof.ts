@@ -1,24 +1,17 @@
 import type { ScanResult } from "./scan.js";
+import { buildNoirWitness, deriveTier } from "./witness.js";
 
 export type RangeProofOutput = {
   tier: "BRONZE" | "SILVER" | "GOLD" | "PLATINUM";
   proofHash: string;
+  witness: ReturnType<typeof buildNoirWitness>;
 };
 
 export async function generateRangeProof(scan: ScanResult): Promise<RangeProofOutput> {
-  // TODO: call Noir circuit once implemented.
-  const total = Number(scan.orchardZats + scan.saplingZats);
-  let tier: RangeProofOutput["tier"];
-  if (total >= 5_000_000_000) {
-    tier = "PLATINUM";
-  } else if (total >= 1_000_000_000) {
-    tier = "GOLD";
-  } else if (total >= 300_000_000) {
-    tier = "SILVER";
-  } else {
-    tier = "BRONZE";
-  }
+  const witness = buildNoirWitness(scan);
+  const total = scan.orchardZats + scan.saplingZats;
+  const tier = deriveTier(total);
   const proofHash = `0xproof${total.toString(16).padStart(8, "0")}`;
-  return { tier, proofHash };
+  return { tier, proofHash, witness };
 }
 
