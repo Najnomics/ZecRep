@@ -6,6 +6,7 @@ import { registerHealthRoutes } from "./routes/health.js";
 import { registerTierRoutes } from "./routes/tiers.js";
 import { registerJobRoutes } from "./routes/jobs.js";
 import { registerGuardRoutes } from "./routes/guards.js";
+import { registerMetricsRoutes } from "./routes/metrics.js";
 
 export async function buildServer() {
   const env = loadEnv();
@@ -21,18 +22,13 @@ export async function buildServer() {
   await server.register(registerTierRoutes);
   await server.register(registerJobRoutes);
   await server.register(registerGuardRoutes);
+  await server.register(registerMetricsRoutes);
 
   server.get("/", async () => ({
     name: "ZecRep Aggregator",
     version: "0.1.0",
     message: "Bridge shielded reputation into Ethereum.",
   }));
-
-  // Metrics endpoint (Prometheus-compatible)
-  server.get("/metrics", async () => {
-    const { metrics } = await import("./lib/metrics.js");
-    return metrics.getMetrics();
-  });
 
   const start = async () => {
     try {

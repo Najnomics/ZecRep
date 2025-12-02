@@ -1,6 +1,7 @@
 import type { FastifyInstance } from "fastify";
 import { createRangeJob, getRangeJob } from "../services/jobs.js";
 import type { RangeJobRequest } from "../services/jobs.js";
+import { recordJobCreated, recordJobCompleted } from "../lib/metrics.js";
 
 /**
  * Job management routes for range proof orchestration.
@@ -23,6 +24,9 @@ export async function registerJobRoutes(fastify: FastifyInstance) {
       }
       
       const job = createRangeJob(body as RangeJobRequest);
+      
+      // Record metrics
+      recordJobCreated(job.tier);
       
       // 202 Accepted - job created, processing asynchronously
       return reply.status(202).send({ job });
