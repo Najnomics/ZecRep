@@ -189,7 +189,8 @@ contract ZecRepRegistryTest is Test, FheEnabled {
         vm.startPrank(admin);
         registry.grantRole(registry.PROOF_VERIFIER_ROLE(), admin);
         bytes32 mockProof = keccak256("mock-proof");
-        registry.recordVerifiedProof(bob, uint8(ZecRepRegistry.TierLevel.GOLD), 500, mockProof);
+        bytes memory encrypted = abi.encodePacked(uint64(5));
+        registry.recordVerifiedProof(bob, uint8(ZecRepRegistry.TierLevel.GOLD), 500, mockProof, encrypted);
         vm.stopPrank();
         (uint8 tier,,) = registry.userTier(bob);
         assertEq(tier, uint8(ZecRepRegistry.TierLevel.GOLD));

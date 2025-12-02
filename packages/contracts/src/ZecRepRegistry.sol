@@ -107,7 +107,13 @@ contract ZecRepRegistry is AccessControl, Permissioned {
         emit ProofSubmitted(msg.sender, tier, config.score, proofHash, record.submittedAt);
     }
 
-    function recordVerifiedProof(address account, uint8 tier, uint16 score, bytes32 proofHash)
+    function recordVerifiedProof(
+        address account,
+        uint8 tier,
+        uint16 score,
+        bytes32 proofHash,
+        bytes calldata encryptedTotal
+    )
         external
         onlyRole(PROOF_VERIFIER_ROLE)
     {
@@ -116,6 +122,7 @@ contract ZecRepRegistry is AccessControl, Permissioned {
         record.score = score;
         record.submittedAt = uint64(block.timestamp);
         record.proofHash = proofHash;
+        record.encryptedTotal = euint64.wrap(uint256(bytes32(encryptedTotal)));
         badge.mintOrUpdate(account, tier, score);
         emit ProofSubmitted(account, tier, score, proofHash, record.submittedAt);
     }
