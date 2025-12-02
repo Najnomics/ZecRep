@@ -10,7 +10,9 @@ const envSchema = z.object({
     .string()
     .regex(/^0x[a-fA-F0-9]{40}$/, "Expected 0x-prefixed 20 byte address")
     .default("0x0000000000000000000000000000000000000000"),
-  ENABLE_GRPC: z.string().transform((val) => val === "true").default("false"),
+  ENABLE_GRPC: z
+    .union([z.string().transform((val) => val === "true"), z.boolean()])
+    .default(false),
 });
 
 export type ProverEnv = z.infer<typeof envSchema>;
