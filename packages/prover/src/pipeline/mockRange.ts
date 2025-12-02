@@ -1,29 +1,32 @@
 import type { ProverEnv } from "../config.js";
+import { scanShieldedActivity } from "./scan.js";
+import { generateRangeProof } from "./proof.js";
+import { encryptRangeResult } from "./encrypt.js";
 
 export type ProofInput = {
   address: string;
   viewingKey: string;
-  tier: "BRONZE" | "SILVER" | "GOLD" | "PLATINUM";
 };
 
 export type ProofArtifact = {
   address: string;
-  tier: ProofInput["tier"];
+  tier: "BRONZE" | "SILVER" | "GOLD" | "PLATINUM";
   proofHash: string;
   encryptedPayload: string;
   notesScanned: number;
 };
 
 export async function runMockPipeline(input: ProofInput, env: ProverEnv): Promise<ProofArtifact> {
-  // Placeholder that simulates the full scan -> proof -> encrypt pipeline.
-  const hash = `0xmock${Buffer.from(input.address.slice(2, 10)).toString("hex")}`;
-  const encryptedPayload = `fhe://${env.FHE_GATEWAY_URL}/job/${hash.slice(2, 10)}`;
+  const scan = await scanShieldedActivity(input.viewingKey, env);
+  const proof = await generateRangeProof(scan);
+  const encryption = await encryptRangeResult(proof, env);
+
   return {
     address: input.address,
-    tier: input.tier,
-    proofHash: hash,
-    encryptedPayload,
-    notesScanned: 0
+    tier: proof.tier,
+    proofHash: proof.proofHash,
+    encryptedPayload: encryption.encryptedPayload,
+    notesScanned: scan.notes,
   };
 }
 

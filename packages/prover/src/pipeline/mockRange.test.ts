@@ -6,8 +6,7 @@ describe("runMockPipeline", () => {
     const artifact = await runMockPipeline(
       {
         address: "0x1234567890abcdef1234567890abcdef12345678",
-        viewingKey: "uviewingkey",
-        tier: "GOLD"
+        viewingKey: "uviewingkey"
       },
       {
         LIGHTWALLETD_URL: "https://example.com",
@@ -16,8 +15,9 @@ describe("runMockPipeline", () => {
         REGISTRY_ADDRESS: "0x0000000000000000000000000000000000000000"
       }
     );
-    expect(artifact.tier).toBe("GOLD");
+    expect(["BRONZE", "SILVER", "GOLD", "PLATINUM"]).toContain(artifact.tier);
     expect(artifact.encryptedPayload).toContain("fhe://");
+    expect(artifact.notesScanned).toBeGreaterThanOrEqual(0);
   });
 });
 

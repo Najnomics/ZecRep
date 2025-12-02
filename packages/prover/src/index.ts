@@ -20,15 +20,13 @@ program
   .description("Run the placeholder range proof pipeline for a wallet (scaffolding step)")
   .requiredOption("--address <hex>", "Ethereum address that will submit the proof")
   .requiredOption("--viewing-key <vk>", "Zcash unified/full viewing key placeholder")
-  .option("--tier <tier>", "Target tier (BRONZE/SILVER/GOLD/PLATINUM)", "GOLD")
   .action(async (opts) => {
     const env = loadEnv();
     logger.info({ env }, "Loaded prover env");
     const artifact = await runMockPipeline(
       {
         address: opts.address,
-        viewingKey: opts.viewingKey,
-        tier: opts.tier.toUpperCase()
+        viewingKey: opts.viewingKey
       },
       env
     );
