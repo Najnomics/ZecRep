@@ -28,6 +28,12 @@ export async function buildServer() {
     message: "Bridge shielded reputation into Ethereum.",
   }));
 
+  // Metrics endpoint (Prometheus-compatible)
+  server.get("/metrics", async () => {
+    const { metrics } = await import("./lib/metrics.js");
+    return metrics.getMetrics();
+  });
+
   const start = async () => {
     try {
       await server.listen({ host: "0.0.0.0", port: env.PORT });
