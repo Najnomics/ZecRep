@@ -50,4 +50,16 @@ export const TierQuerySchema = z.object({
 
 export type TierQuery = z.infer<typeof TierQuerySchema>;
 
+export async function fetchTierHistory(address: string, limit = 10) {
+  const entries = await storage.getTierHistory(address, limit);
+  return entries.map((entry) => ({
+    address: entry.address,
+    tier: entry.tier,
+    score: entry.score,
+    encryptedTotal: entry.encryptedTotal,
+    updatedAt: entry.updatedAt,
+    volumeZats: entry.volumeZats,
+  }));
+}
+
 

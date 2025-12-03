@@ -5,6 +5,7 @@ export const envSchema = z.object({
   LOG_LEVEL: z.enum(["trace", "debug", "info", "warn", "error", "fatal"]).default("info"),
   ZCASH_LIGHTWALLETD_URL: z.string().url(),
   FHE_GATEWAY_URL: z.string().url(),
+  PROVER_URL: z.string().url().default("http://localhost:4101"),
   REGISTRY_ADDRESS: z
     .string()
     .regex(/^0x[a-fA-F0-9]{40}$/, "Expected 0x-prefixed 20 byte address"),

@@ -20,8 +20,9 @@ import { tierScoreMap } from "./tiers.js";
 
 const RangeJobSchema = z.object({
   address: z.string().regex(/^0x[a-fA-F0-9]{40}$/, "Invalid Ethereum address"),
-  tier: z.enum(["BRONZE", "SILVER", "GOLD", "PLATINUM"]),
-  proofHash: z.string().regex(/^0x[a-fA-F0-9]{64}$/, "Invalid proof hash (expected 32 bytes hex)"),
+  viewingKey: z.string().min(1, "Viewing key required"),
+  tier: z.enum(["BRONZE", "SILVER", "GOLD", "PLATINUM"]).optional(),
+  proofHash: z.string().optional(),
   encryptedTotal: z.string().optional(), // inEuint64.data format
 });
 
@@ -46,42 +47,16 @@ export async function createRangeJob(input: RangeJobRequest): Promise<RangeJob> 
     submittedAt: now,
     updatedAt: now,
     address: parsed.address,
-    tier: parsed.tier,
-    proofHash: parsed.proofHash,
+    viewingKey: parsed.viewingKey,
+    tier: parsed.tier ?? "BRONZE",
+    proofHash: parsed.proofHash ?? `0x${crypto.randomBytes(32).toString("hex")}`,
     result: undefined,
   };
 
   await storage.saveJob(job);
 
-  // TODO: Replace with Cofhe gateway integration
-  setTimeout(async () => {
-    const existing = await storage.getJob(id);
-    if (existing && existing.status === "pending") {
-      const result = {
-        encryptedPayload: `fhe://mock/${id.slice(0, 8)}`,
-        inEuint64: {
-          data: `0x${crypto.randomBytes(32).toString("hex")}`,
-          securityZone: 0,
-        },
-      };
-
-      await storage.updateJob(id, {
-        status: "completed",
-        result,
-      });
-
-      await storage.saveTier({
-        address: existing.address,
-        tier: existing.tier,
-        score: tierScoreMap[existing.tier] ?? 0,
-        encryptedTotal: result.inEuint64?.data ?? "0x",
-        volumeZats: 0,
-        updatedAt: new Date().toISOString(),
-      });
-
-      recordJobCompleted(existing.tier, 0.5);
-    }
-  }, 500);
+  // Job processor will handle async processing
+  // No need for setTimeout - processor polls pending jobs
 
   return job;
 }

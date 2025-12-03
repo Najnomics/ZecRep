@@ -1,6 +1,6 @@
 import type { FastifyInstance } from "fastify";
-import { TierQuerySchema, fetchTier } from "../services/tiers.js";
-import { storage } from "../services/storage.js";
+import { z } from "zod";
+import { TierQuerySchema, fetchTier, fetchTierHistory } from "../services/tiers.js";
 
 export async function registerTierRoutes(fastify: FastifyInstance) {
   fastify.get("/api/reputation/tier", async (request, reply) => {
@@ -15,8 +15,12 @@ export async function registerTierRoutes(fastify: FastifyInstance) {
     return { data: result };
   });
 
+  const TierHistorySchema = TierQuerySchema.extend({
+    limit: z.coerce.number().int().min(1).max(50).default(10),
+  });
+
   fastify.get("/api/reputation/history", async (request, reply) => {
-    const parsed = TierQuerySchema.safeParse(request.query);
+    const parsed = TierHistorySchema.safeParse(request.query);
     if (!parsed.success) {
       return reply.status(400).send({
         error: "InvalidQuery",
@@ -24,7 +28,7 @@ export async function registerTierRoutes(fastify: FastifyInstance) {
       });
     }
 
-    const history = await storage.getTierHistory(parsed.data.address, 10);
+    const history = await fetchTierHistory(parsed.data.address, parsed.data.limit);
     return { data: history };
   });
 }

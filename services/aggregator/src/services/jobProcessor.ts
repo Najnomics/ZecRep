@@ -8,9 +8,11 @@
  * 4. Updates job status
  */
 
+import { fetch } from "undici";
 import { logger } from "../lib/logger.js";
 import { storage, type StorableJob } from "./storage.js";
 import { triggerWebhooks } from "../routes/webhooks.js";
+import { loadEnv } from "../config/index.js";
 
 export type JobProcessorOptions = {
   encryptionTimeout?: number;
@@ -37,36 +39,65 @@ export async function processRangeJob(
     // Update status to processing
     await storage.updateJob(jobId, { status: "processing" });
 
-    // TODO: Implement actual processing:
-    // 1. Call prover to generate proof
-    // 2. Submit encryption job to FHE gateway
-    // 3. Poll encryption status
-    // 4. Update job with encrypted result
+    // Call prover service to generate proof and encrypt
+    const env = loadEnv();
+    const proverUrl = env.PROVER_URL || "http://localhost:4101";
+    
+    logger.info({ jobId, proverUrl }, "Calling prover service");
+    
+    const proverResponse = await fetch(`${proverUrl}/prove`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        address: job.address,
+        viewingKey: job.viewingKey,
+      }),
+    });
 
-    // For now, simulate async processing
-    await simulateJobProcessing(jobId, encryptionTimeout);
+    if (!proverResponse.ok) {
+      const errorText = await proverResponse.text();
+      throw new Error(`Prover service failed: ${proverResponse.status} ${errorText}`);
+    }
 
-    // Mark as completed
+    const proverResult = (await proverResponse.json()) as {
+      success: boolean;
+      artifact: {
+        tier: string;
+        proofHash: string;
+        encryptedPayload: string;
+        inEuint64: { data: string; securityZone: number };
+        notesScanned: number;
+      };
+    };
+
+    if (!proverResult.success || !proverResult.artifact) {
+      throw new Error("Prover returned unsuccessful result");
+    }
+
+    // Update job with prover result
     await storage.updateJob(jobId, {
       status: "completed",
+      tier: proverResult.artifact.tier,
+      proofHash: proverResult.artifact.proofHash,
       result: {
-        encryptedPayload: `fhe://mock/${jobId}`,
-        inEuint64: {
-          data: `0x${Buffer.from(jobId).toString("hex")}`,
-          securityZone: 0,
-        },
+        encryptedPayload: proverResult.artifact.encryptedPayload,
+        inEuint64: proverResult.artifact.inEuint64,
       },
     });
 
     logger.info({ jobId }, "Job processing completed");
 
-    // Trigger webhook if tier upgrade
-    await triggerWebhooks("badge_minted", {
-      address: job.address,
-      newTier: job.tier,
-      score: 500, // TODO: Get from tier config
-      proofHash: job.proofHash,
-    });
+    // Get updated job to access final tier/proofHash
+    const completedJob = await storage.getJob(jobId);
+    if (completedJob) {
+      // Trigger webhook if tier upgrade
+      await triggerWebhooks("badge_minted", {
+        address: completedJob.address,
+        newTier: completedJob.tier,
+        score: 500, // TODO: Get from tier config
+        proofHash: completedJob.proofHash,
+      });
+    }
   } catch (error) {
     logger.error({ error, jobId }, "Job processing failed");
     
@@ -77,13 +108,6 @@ export async function processRangeJob(
   }
 }
 
-/**
- * Simulate async job processing (for development).
- */
-async function simulateJobProcessing(jobId: string, timeout: number): Promise<void> {
-  // Simulate processing delay
-  await new Promise((resolve) => setTimeout(resolve, Math.min(timeout, 5000)));
-}
 
 /**
  * Start processing pending jobs.

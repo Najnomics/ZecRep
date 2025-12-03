@@ -31,6 +31,7 @@ fn main(total_zats: Field, bronze_max: Field, silver_max: Field, gold_max: Field
     constrain total_zats <= max_reasonable;
 
     // Determine tier based on range comparisons
+    // Use explicit constraints to ensure tier assignment is correct
     let tier = if total_zats <= bronze_max {
         1 // BRONZE: 1-2 ZEC
     } else if total_zats <= silver_max {
@@ -40,6 +41,32 @@ fn main(total_zats: Field, bronze_max: Field, silver_max: Field, gold_max: Field
     } else {
         4 // PLATINUM: 50+ ZEC
     };
+
+    // Ensure tier is valid (1-4)
+    constrain tier >= 1;
+    constrain tier <= 4;
+
+    // Ensure tier assignment is consistent with thresholds
+    // If tier is 1, total must be <= bronze_max
+    // If tier is 2, total must be > bronze_max and <= silver_max
+    // If tier is 3, total must be > silver_max and <= gold_max
+    // If tier is 4, total must be > gold_max
+    
+    let is_bronze = if tier == 1 { 1 } else { 0 };
+    let is_silver = if tier == 2 { 1 } else { 0 };
+    let is_gold = if tier == 3 { 1 } else { 0 };
+    let is_platinum = if tier == 4 { 1 } else { 0 };
+
+    // Enforce tier constraints
+    constrain is_bronze * (total_zats - bronze_max) <= 0;
+    constrain is_silver * (total_zats - bronze_max) > 0;
+    constrain is_silver * (total_zats - silver_max) <= 0;
+    constrain is_gold * (total_zats - silver_max) > 0;
+    constrain is_gold * (total_zats - gold_max) <= 0;
+    constrain is_platinum * (total_zats - gold_max) > 0;
+
+    // Ensure exactly one tier is selected
+    constrain is_bronze + is_silver + is_gold + is_platinum == 1;
 
     // Public output: tier only (total_zats remains private)
     tier

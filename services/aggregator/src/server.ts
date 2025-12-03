@@ -9,11 +9,20 @@ import { registerGuardRoutes } from "./routes/guards.js";
 import { registerMetricsRoutes } from "./routes/metrics.js";
 import { registerWebhookRoutes } from "./routes/webhooks.js";
 import { registerStatsRoutes } from "./routes/stats.js";
+import { startJobProcessor } from "./services/jobProcessor.js";
 
 export async function buildServer() {
   const env = loadEnv();
   const server = Fastify({
     logger,
+  });
+
+  // Start job processor for async proof generation
+  const stopProcessor = await startJobProcessor({ pollInterval: 5000 });
+  
+  // Graceful shutdown
+  server.addHook("onClose", async () => {
+    stopProcessor();
   });
 
   await server.register(cors, {

@@ -11,6 +11,7 @@ export type StorableJob = {
   id: string;
   status: "pending" | "processing" | "completed" | "failed";
   address: string;
+  viewingKey: string;
   tier: string;
   proofHash: string;
   submittedAt: string;
