@@ -113,5 +113,16 @@ export class AggregatorClient {
       };
     };
   }
+
+  async getTierHistory(address: string, limit = 10) {
+    const response = await fetch(
+      `${this.baseUrl}/api/reputation/history?address=${address}&limit=${limit}`
+    );
+    if (!response.ok) {
+      throw new Error(`Failed to fetch tier history: ${response.statusText}`);
+    }
+    const data = (await response.json()) as { data: Array<{ tier: string; score: number; updatedAt: string }> };
+    return data.data;
+  }
 }
 

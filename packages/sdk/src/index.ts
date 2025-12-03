@@ -12,6 +12,7 @@ export { RegistryClient, BadgeClient } from "./client/contract.js";
 export { useTier } from "./hooks/useTier.js";
 export { useProofWizard } from "./hooks/useProofWizard.js";
 export { useJobs } from "./hooks/useJobs.js";
+export { useTierHistory } from "./hooks/useTierHistory.js";
 
 // Type exports
 export type { TierData, RangeJob, ProofInput, JobStatus } from "./types.js";

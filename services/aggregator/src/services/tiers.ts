@@ -1,13 +1,37 @@
 import { z } from "zod";
 import { logger } from "../lib/logger.js";
+import { storage } from "./storage.js";
 
 // Placeholder fetcher; will connect to lightwalletd and Cofhe jobs later.
+export const tierScoreMap: Record<string, number> = {
+  NONE: 0,
+  BRONZE: 100,
+  SILVER: 200,
+  GOLD: 500,
+  PLATINUM: 1000,
+};
+
+export async function fetchTier(address: string) {
+  const stored = await storage.getTier(address);
+  if (stored) {
+    return {
+      address: stored.address,
+      tier: stored.tier,
+      score: stored.score,
+      encryptedTotal: stored.encryptedTotal,
+      updatedAt: stored.updatedAt,
+      volumeZats: stored.volumeZats,
+    };
+  }
+  return fetchMockTier(address);
+}
+
 export async function fetchMockTier(address: string) {
   logger.debug({ address }, "Fetching mock tier");
   const hash = Number(BigInt(address) & BigInt(0xffff));
   const tiers = ["NONE", "BRONZE", "SILVER", "GOLD", "PLATINUM"] as const;
   const tierIndex = hash % tiers.length;
-  const score = [0, 100, 200, 500, 1000][tierIndex];
+  const score = tierScoreMap[tiers[tierIndex]];
   const volume = (tierIndex * 10 + 1) * 1_000_000;
 
   return {

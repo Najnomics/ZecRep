@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { AggregatorClient } from "@zecrep/sdk/client/aggregator";
 import { ProofWizard } from "../../components/ProofWizard.js";
 import { JobHistory } from "../../components/JobHistory.js";
+import { TierHistory } from "../../components/TierHistory.js";
 import { AGGREGATOR_URL } from "../../lib/constants.js";
 
 /**
@@ -85,8 +86,9 @@ export default function ConsolePage() {
           />
         )}
 
-        <div className="mt-8">
+        <div className="mt-8 grid gap-6 lg:grid-cols-2">
           <JobHistory client={aggregatorClient} address={address} />
+          <TierHistory client={aggregatorClient} address={address} />
         </div>
       </div>
     </main>

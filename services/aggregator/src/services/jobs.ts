@@ -3,6 +3,7 @@ import { z } from "zod";
 import { storage } from "./storage.js";
 import type { StorableJob } from "./storage.js";
 import { recordJobCompleted } from "../lib/metrics.js";
+import { tierScoreMap } from "./tiers.js";
 
 /**
  * Range proof job orchestration for ZecRep.
@@ -56,16 +57,28 @@ export async function createRangeJob(input: RangeJobRequest): Promise<RangeJob> 
   setTimeout(async () => {
     const existing = await storage.getJob(id);
     if (existing && existing.status === "pending") {
+      const result = {
+        encryptedPayload: `fhe://mock/${id.slice(0, 8)}`,
+        inEuint64: {
+          data: `0x${crypto.randomBytes(32).toString("hex")}`,
+          securityZone: 0,
+        },
+      };
+
       await storage.updateJob(id, {
         status: "completed",
-        result: {
-          encryptedPayload: `fhe://mock/${id.slice(0, 8)}`,
-          inEuint64: {
-            data: `0x${crypto.randomBytes(32).toString("hex")}`,
-            securityZone: 0,
-          },
-        },
+        result,
       });
+
+      await storage.saveTier({
+        address: existing.address,
+        tier: existing.tier,
+        score: tierScoreMap[existing.tier] ?? 0,
+        encryptedTotal: result.inEuint64?.data ?? "0x",
+        volumeZats: 0,
+        updatedAt: new Date().toISOString(),
+      });
+
       recordJobCompleted(existing.tier, 0.5);
     }
   }, 500);
