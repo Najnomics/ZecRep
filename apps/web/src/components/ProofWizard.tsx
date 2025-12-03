@@ -1,19 +1,28 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import type { AggregatorClient } from "@zecrep/sdk/client/aggregator";
 import { useProofWizard } from "@zecrep/sdk/hooks/useProofWizard";
 import { TierBadge } from "./TierBadge.js";
 
 interface ProofWizardProps {
   client: AggregatorClient;
+  viewingKey: string;
+  onViewingKeyChange: (value: string) => void;
+  address: string;
+  onAddressChange: (value: string) => void;
   onComplete?: () => void;
 }
 
-export function ProofWizard({ client, onComplete }: ProofWizardProps) {
+export function ProofWizard({
+  client,
+  viewingKey,
+  onViewingKeyChange,
+  address,
+  onAddressChange,
+  onComplete,
+}: ProofWizardProps) {
   const { state, scan, prove, encrypt, submit, reset } = useProofWizard(client);
-  const [viewingKey, setViewingKey] = useState("");
-  const [address, setAddress] = useState("");
 
   useEffect(() => {
     if (state.step === "complete") {
@@ -30,7 +39,7 @@ export function ProofWizard({ client, onComplete }: ProofWizardProps) {
         <input
           type="text"
           value={viewingKey}
-          onChange={(e) => setViewingKey(e.target.value)}
+          onChange={(e) => onViewingKeyChange(e.target.value)}
           className="w-full rounded-lg border border-white/10 bg-slate-950 px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
           placeholder="uview1..."
         />
@@ -41,7 +50,7 @@ export function ProofWizard({ client, onComplete }: ProofWizardProps) {
         <input
           type="text"
           value={address}
-          onChange={(e) => setAddress(e.target.value)}
+          onChange={(e) => onAddressChange(e.target.value)}
           className="w-full rounded-lg border border-white/10 bg-slate-950 px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
           placeholder="0x..."
         />

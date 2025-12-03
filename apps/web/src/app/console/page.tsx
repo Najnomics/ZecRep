@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { AggregatorClient } from "@zecrep/sdk/client/aggregator";
 import { ProofWizard } from "../../components/ProofWizard.js";
+import { JobHistory } from "../../components/JobHistory.js";
 import { AGGREGATOR_URL } from "../../lib/constants.js";
 
 /**
@@ -17,6 +18,8 @@ export default function ConsolePage() {
   const [ethereumConnected, setEthereumConnected] = useState(false);
   const [zcashConnected, setZcashConnected] = useState(false);
   const [showWizard, setShowWizard] = useState(false);
+  const [viewingKey, setViewingKey] = useState("");
+  const [address, setAddress] = useState("");
   const aggregatorClient = useMemo(() => new AggregatorClient(AGGREGATOR_URL), []);
 
   return (
@@ -70,6 +73,10 @@ export default function ConsolePage() {
         ) : (
           <ProofWizard
             client={aggregatorClient}
+            viewingKey={viewingKey}
+            onViewingKeyChange={setViewingKey}
+            address={address}
+            onAddressChange={setAddress}
             onComplete={() => {
               setShowWizard(false);
               setEthereumConnected(false);
@@ -77,6 +84,10 @@ export default function ConsolePage() {
             }}
           />
         )}
+
+        <div className="mt-8">
+          <JobHistory client={aggregatorClient} address={address} />
+        </div>
       </div>
     </main>
   );
