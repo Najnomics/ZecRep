@@ -1,5 +1,8 @@
 import crypto from "node:crypto";
 import { z } from "zod";
+import { storage } from "./storage.js";
+import type { StorableJob } from "./storage.js";
+import { recordJobCompleted } from "../lib/metrics.js";
 
 /**
  * Range proof job orchestration for ZecRep.
@@ -25,81 +28,78 @@ export type RangeJobRequest = z.infer<typeof RangeJobSchema>;
 
 export type JobStatus = "pending" | "processing" | "completed" | "failed";
 
-export type RangeJob = {
-  id: string;
-  status: JobStatus;
-  submittedAt: string;
-  updatedAt?: string;
-  result?: {
-    encryptedPayload: string;
-    inEuint64?: {
-      data: string;
-      securityZone: number;
-    };
-  };
-  error?: string;
-} & RangeJobRequest;
-
-const jobs = new Map<string, RangeJob>();
+export type RangeJob = StorableJob;
 
 /**
  * Creates a new range proof job.
  * In production, this will coordinate with Cofhe gateway for async encryption.
  */
-export function createRangeJob(input: RangeJobRequest): RangeJob {
+export async function createRangeJob(input: RangeJobRequest): Promise<RangeJob> {
   const parsed = RangeJobSchema.parse(input);
   const id = crypto.randomUUID();
   const now = new Date().toISOString();
-  
-  const job: RangeJob = {
+
+  const job: StorableJob = {
     id,
     status: "pending",
     submittedAt: now,
-    ...parsed,
+    updatedAt: now,
+    address: parsed.address,
+    tier: parsed.tier,
+    proofHash: parsed.proofHash,
+    result: undefined,
   };
-  
-  jobs.set(id, job);
-  
-  // TODO: Replace with actual Cofhe gateway integration
-  // For now, simulate async encryption completion after a delay
-  setTimeout(() => {
-    const existing = jobs.get(id);
+
+  await storage.saveJob(job);
+
+  // TODO: Replace with Cofhe gateway integration
+  setTimeout(async () => {
+    const existing = await storage.getJob(id);
     if (existing && existing.status === "pending") {
-      existing.status = "completed";
-      existing.updatedAt = new Date().toISOString();
-      existing.result = {
-        encryptedPayload: `fhe://mock/${id.slice(0, 8)}`,
-        inEuint64: {
-          data: `0x${crypto.randomBytes(32).toString("hex")}`,
-          securityZone: 0,
+      await storage.updateJob(id, {
+        status: "completed",
+        result: {
+          encryptedPayload: `fhe://mock/${id.slice(0, 8)}`,
+          inEuint64: {
+            data: `0x${crypto.randomBytes(32).toString("hex")}`,
+            securityZone: 0,
+          },
         },
-      };
-      jobs.set(id, existing);
+      });
+      recordJobCompleted(existing.tier, 0.5);
     }
   }, 500);
-  
+
   return job;
 }
 
-export function getRangeJob(id: string): RangeJob | undefined {
-  return jobs.get(id);
+export async function getRangeJob(id: string): Promise<RangeJob | null> {
+  return storage.getJob(id);
 }
 
-export function updateJobStatus(
+export async function listRangeJobs(filters?: {
+  address?: string;
+  status?: JobStatus;
+  limit?: number;
+}): Promise<RangeJob[]> {
+  return storage.listJobs(filters);
+}
+
+export async function updateJobStatus(
   id: string,
   status: JobStatus,
   result?: RangeJob["result"],
   error?: string
-): boolean {
-  const job = jobs.get(id);
+): Promise<boolean> {
+  const job = await storage.getJob(id);
   if (!job) return false;
-  
-  job.status = status;
-  job.updatedAt = new Date().toISOString();
-  if (result) job.result = result;
-  if (error) job.error = error;
-  
-  jobs.set(id, job);
+
+  await storage.updateJob(id, {
+    status,
+    result: result ?? job.result,
+    error,
+  });
+
   return true;
 }
 

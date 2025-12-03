@@ -15,8 +15,13 @@ export type StorableJob = {
   proofHash: string;
   submittedAt: string;
   updatedAt: string;
-  encryptedPayload?: string;
-  encryptedTotal?: string;
+  result?: {
+    encryptedPayload: string;
+    inEuint64?: {
+      data: string;
+      securityZone: number;
+    };
+  };
   error?: string;
 };
 

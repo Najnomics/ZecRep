@@ -49,8 +49,13 @@ export async function processRangeJob(
     // Mark as completed
     await storage.updateJob(jobId, {
       status: "completed",
-      encryptedPayload: `fhe://mock/${jobId}`,
-      encryptedTotal: `0x${Buffer.from(jobId).toString("hex")}`,
+      result: {
+        encryptedPayload: `fhe://mock/${jobId}`,
+        inEuint64: {
+          data: `0x${Buffer.from(jobId).toString("hex")}`,
+          securityZone: 0,
+        },
+      },
     });
 
     logger.info({ jobId }, "Job processing completed");

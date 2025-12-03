@@ -23,7 +23,7 @@ export async function registerJobRoutes(fastify: FastifyInstance) {
         });
       }
       
-      const job = createRangeJob(body as RangeJobRequest);
+      const job = await createRangeJob(body as RangeJobRequest);
       
       // Record metrics
       recordJobCreated(job.tier);
@@ -50,7 +50,7 @@ export async function registerJobRoutes(fastify: FastifyInstance) {
       });
     }
     
-    const job = getRangeJob(jobId);
+    const job = await getRangeJob(jobId);
     if (!job) {
       return reply.status(404).send({
         error: "NotFound",
