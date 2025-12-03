@@ -1,4 +1,5 @@
 import type { TierData, RangeJob, ProofInput } from "../types.js";
+import type { JobStatus } from "../types.js";
 
 /**
  * Client for interacting with the ZecRep aggregator service.
@@ -71,6 +72,24 @@ export class AggregatorClient {
     }
     const data = (await response.json()) as { job: RangeJob };
     return data.job;
+  }
+
+  /**
+   * List recent jobs with optional filters.
+   */
+  async listJobs(params?: { address?: string; status?: JobStatus; limit?: number }): Promise<RangeJob[]> {
+    const search = new URLSearchParams();
+    if (params?.address) search.set("address", params.address);
+    if (params?.status) search.set("status", params.status);
+    if (params?.limit) search.set("limit", params.limit.toString());
+
+    const query = search.toString();
+    const response = await fetch(`${this.baseUrl}/api/jobs${query ? `?${query}` : ""}`);
+    if (!response.ok) {
+      throw new Error(`Failed to list jobs: ${response.statusText}`);
+    }
+    const data = (await response.json()) as { jobs: RangeJob[] };
+    return data.jobs;
   }
 
   /**

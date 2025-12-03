@@ -4,8 +4,6 @@
  * Provides typed interfaces for contract calls and event listening.
  */
 
-import type { IZecRepRegistry } from "../../contracts/src/interfaces/IZecRepRegistry.sol";
-
 export interface ContractConfig {
   registryAddress: string;
   badgeAddress: string;

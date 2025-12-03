@@ -1,5 +1,6 @@
-import { useState, useCallback } from "react";
+import { useState } from "react";
 import type { AggregatorClient } from "../client/aggregator.js";
+import type { RangeJob, TierLevel } from "../types.js";
 
 export type ProofWizardStep = "scan" | "prove" | "encrypt" | "submit" | "complete";
 
@@ -16,18 +17,21 @@ export type ProofWizardState = {
     totalNotes: number;
   } | null;
   proofResult: {
-    tier: string;
+    tier: TierLevel;
     proofHash: string;
   } | null;
   encryptedResult: {
     encryptedPayload: string;
     jobId?: string;
   } | null;
+  job?: RangeJob;
+  viewingKey?: string;
 };
 
 /**
- * React hook for managing the proof wizard flow.
- * Coordinates scanning, proving, encryption, and submission steps.
+ * Proof wizard hook that orchestrates scan → prove → encrypt → submit steps.
+ * Currently uses placeholder scanning/encryption logic but integrates with
+ * the aggregator for job submission + polling.
  */
 export function useProofWizard(client: AggregatorClient) {
   const [state, setState] = useState<ProofWizardState>({
@@ -40,44 +44,46 @@ export function useProofWizard(client: AggregatorClient) {
     scanResult: null,
     proofResult: null,
     encryptedResult: null,
+    job: undefined,
+    viewingKey: undefined,
   });
 
-  const scan = useCallback(
-    async (viewingKey: string) => {
-      setState((prev) => ({ ...prev, scanning: true, error: null, step: "scan" }));
+  const setError = (error: Error | null) => {
+    setState((prev) => ({ ...prev, error }));
+  };
 
-      try {
-        // TODO: Call actual scanning API
-        // For now, mock the scan result
-        const scanResult = {
-          saplingZats: BigInt(15_000_000_000), // 15 ZEC
-          orchardZats: BigInt(0),
-          totalNotes: 5,
-        };
+  const scan = async (viewingKey: string) => {
+    setState((prev) => ({
+      ...prev,
+      scanning: true,
+      error: null,
+      step: "scan",
+      viewingKey,
+    }));
 
-        setState((prev) => ({
-          ...prev,
-          scanning: false,
-          scanResult,
-          step: "prove",
-        }));
-      } catch (error) {
-        setState((prev) => ({
-          ...prev,
-          scanning: false,
-          error: error instanceof Error ? error : new Error("Scan failed"),
-        }));
-      }
-    },
-    []
-  );
+    try {
+      // TODO: Hook into actual lightwalletd scanning via prover pipeline
+      const scanResult = {
+        saplingZats: BigInt(14_000_000_000),
+        orchardZats: BigInt(1_000_000_000),
+        totalNotes: 7,
+      };
 
-  const prove = useCallback(async () => {
-    if (!state.scanResult) {
       setState((prev) => ({
         ...prev,
-        error: new Error("Scan must complete before proving"),
+        scanning: false,
+        scanResult,
+        step: "prove",
       }));
+    } catch (error) {
+      setError(error instanceof Error ? error : new Error("Failed to scan activity"));
+      setState((prev) => ({ ...prev, scanning: false }));
+    }
+  };
+
+  const prove = async () => {
+    if (!state.scanResult) {
+      setError(new Error("Scan must complete before proving"));
       return;
     }
 
@@ -85,110 +91,107 @@ export function useProofWizard(client: AggregatorClient) {
 
     try {
       const total = state.scanResult.saplingZats + state.scanResult.orchardZats;
-      
-      // Determine tier
-      let tier = "BRONZE";
+      let tier: TierLevel = "BRONZE";
       if (total > BigInt(50_000_000_000)) tier = "PLATINUM";
       else if (total > BigInt(10_000_000_000)) tier = "GOLD";
       else if (total > BigInt(2_000_000_000)) tier = "SILVER";
 
-      // TODO: Generate actual Noir proof
-      const proofHash = `0x${Buffer.from(total.toString()).toString("hex").slice(0, 64)}`;
-
-      const proofResult = {
-        tier,
-        proofHash,
-      };
+      const proofHash = `0x${Buffer.from(total.toString()).toString("hex").slice(0, 64).padEnd(64, "0")}`;
 
       setState((prev) => ({
         ...prev,
         proving: false,
-        proofResult,
+        proofResult: { tier, proofHash },
         step: "encrypt",
       }));
     } catch (error) {
-      setState((prev) => ({
-        ...prev,
-        proving: false,
-        error: error instanceof Error ? error : new Error("Proof generation failed"),
-      }));
+      setError(error instanceof Error ? error : new Error("Failed to generate proof"));
+      setState((prev) => ({ ...prev, proving: false }));
     }
-  }, [state.scanResult]);
+  };
 
-  const encrypt = useCallback(async () => {
+  const encrypt = async () => {
     if (!state.proofResult) {
-      setState((prev) => ({
-        ...prev,
-        error: new Error("Proof must complete before encryption"),
-      }));
+      setError(new Error("Proof must complete before encryption"));
       return;
     }
 
     setState((prev) => ({ ...prev, encrypting: true, error: null }));
 
     try {
-      // TODO: Call FHE encryption API
-      const encryptedResult = {
-        encryptedPayload: `fhe://encrypted/${state.proofResult.proofHash.slice(2, 10)}`,
-      };
-
+      // TODO: call real Cofhe encryption pipeline
       setState((prev) => ({
         ...prev,
         encrypting: false,
-        encryptedResult,
+        encryptedResult: {
+          encryptedPayload: `fhe://placeholder/${prev.proofResult?.proofHash.slice(2, 10)}`,
+        },
         step: "submit",
       }));
     } catch (error) {
+      setError(error instanceof Error ? error : new Error("Failed to encrypt result"));
+      setState((prev) => ({ ...prev, encrypting: false }));
+    }
+  };
+
+  const submit = async (address: string) => {
+    if (!state.proofResult || !state.viewingKey) {
+      setError(new Error("Proof and viewing key required before submission"));
+      return;
+    }
+
+    setState((prev) => ({ ...prev, submitting: true, error: null }));
+
+    try {
+      const job = await client.submitRangeJob({
+        address,
+        viewingKey: state.viewingKey,
+        tier: state.proofResult.tier,
+      });
+
       setState((prev) => ({
         ...prev,
-        encrypting: false,
-        error: error instanceof Error ? error : new Error("Encryption failed"),
+        submitting: false,
+        job,
+        encryptedResult: {
+          ...(prev.encryptedResult ?? { encryptedPayload: "" }),
+          jobId: job.id,
+        },
+        step: "submit",
       }));
-    }
-  }, [state.proofResult]);
 
-  const submit = useCallback(
-    async (address: string) => {
-      if (!state.proofResult || !state.encryptedResult) {
-        setState((prev) => ({
-          ...prev,
-          error: new Error("Proof and encryption must complete before submission"),
-        }));
+      await pollJob(job.id);
+    } catch (error) {
+      setError(error instanceof Error ? error : new Error("Failed to submit job"));
+      setState((prev) => ({ ...prev, submitting: false }));
+    }
+  };
+
+  const pollJob = async (jobId: string) => {
+    const maxAttempts = 20;
+    const interval = 2000;
+
+    for (let attempt = 0; attempt < maxAttempts; attempt++) {
+      const job = await client.getJobStatus(jobId);
+      setState((prev) => ({ ...prev, job }));
+
+      if (job.status === "completed") {
+        setState((prev) => ({ ...prev, step: "complete" }));
         return;
       }
 
-      setState((prev) => ({ ...prev, submitting: true, error: null }));
-
-      try {
-        // TODO: Submit to aggregator job API
-        const job = await client.submitRangeJob({
-          address,
-          tier: state.proofResult.tier,
-          proofHash: state.proofResult.proofHash,
-          viewingKey: "", // Not sent to server
-        });
-
-        setState((prev) => ({
-          ...prev,
-          submitting: false,
-          step: "complete",
-          encryptedResult: {
-            ...prev.encryptedResult!,
-            jobId: job.job.id,
-          },
-        }));
-      } catch (error) {
-        setState((prev) => ({
-          ...prev,
-          submitting: false,
-          error: error instanceof Error ? error : new Error("Submission failed"),
-        }));
+      if (job.status === "failed") {
+        setError(new Error(job.error ?? "Job failed"));
+        return;
       }
-    },
-    [state.proofResult, state.encryptedResult, client]
-  );
 
-  const reset = useCallback(() => {
+      await new Promise((resolve) => setTimeout(resolve, interval));
+    }
+
+    setError(new Error("Job polling timed out"));
+  };
+
+  const reset = () => {
     setState({
       step: "scan",
       scanning: false,
@@ -199,8 +202,10 @@ export function useProofWizard(client: AggregatorClient) {
       scanResult: null,
       proofResult: null,
       encryptedResult: null,
+      job: undefined,
+      viewingKey: undefined,
     });
-  }, []);
+  };
 
   return {
     state,

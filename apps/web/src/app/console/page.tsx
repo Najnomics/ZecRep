@@ -1,7 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
+import { AggregatorClient } from "@zecrep/sdk/client/aggregator";
 import { ProofWizard } from "../../components/ProofWizard.js";
+import { AGGREGATOR_URL } from "../../lib/constants.js";
 
 /**
  * ZecRep Console - Main application interface for users to:
@@ -15,6 +17,7 @@ export default function ConsolePage() {
   const [ethereumConnected, setEthereumConnected] = useState(false);
   const [zcashConnected, setZcashConnected] = useState(false);
   const [showWizard, setShowWizard] = useState(false);
+  const aggregatorClient = useMemo(() => new AggregatorClient(AGGREGATOR_URL), []);
 
   return (
     <main className="min-h-screen bg-slate-950 px-6 py-12 text-slate-100">
@@ -66,6 +69,7 @@ export default function ConsolePage() {
           </div>
         ) : (
           <ProofWizard
+            client={aggregatorClient}
             onComplete={() => {
               setShowWizard(false);
               setEthereumConnected(false);

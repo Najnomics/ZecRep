@@ -1,6 +1,6 @@
 import type { FastifyInstance } from "fastify";
-import { createRangeJob, getRangeJob } from "../services/jobs.js";
-import type { RangeJobRequest } from "../services/jobs.js";
+import { createRangeJob, getRangeJob, listRangeJobs } from "../services/jobs.js";
+import type { RangeJobRequest, JobStatus } from "../services/jobs.js";
 import { recordJobCreated, recordJobCompleted } from "../lib/metrics.js";
 
 /**
@@ -59,6 +59,26 @@ export async function registerJobRoutes(fastify: FastifyInstance) {
     }
     
     return { job };
+  });
+  /**
+   * GET /api/jobs
+   * List recent jobs with optional filters.
+   */
+  fastify.get("/api/jobs", async (request, reply) => {
+    const query = request.query as {
+      address?: string;
+      status?: JobStatus;
+      limit?: string;
+    };
+
+    const limit = query.limit ? Number.parseInt(query.limit, 10) : 20;
+    const jobs = await listRangeJobs({
+      address: query.address,
+      status: query.status,
+      limit,
+    });
+
+    return { jobs };
   });
 }
 
