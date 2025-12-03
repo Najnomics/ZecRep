@@ -8,7 +8,8 @@
  * - Web3.Storage
  */
 
-import { fetch } from "undici";
+import { fetch, FormData } from "undici";
+import { Blob } from "buffer";
 import { logger } from "./logger.js";
 
 export type IPFSConfig = {

@@ -3,6 +3,7 @@ import type { ProverEnv } from "../config.js";
 import type { ScanResult } from "../pipeline/scan.js";
 import { LightwalletdClient } from "./lightwalletdClient.js";
 import { parseCompactBlock, aggregateNotes, calculateTotal, filterByPool } from "./compactBlockParser.js";
+import { filterNotesByViewingKey } from "./noteFilter.js";
 import { logger } from "../lib/logger.js";
 
 /**
@@ -50,23 +51,27 @@ export async function fetchShieldedTotals(env: ProverEnv, viewingKey: string): P
     const parsedBlocks = blocks.map(parseCompactBlock);
     const allNotes = aggregateNotes(parsedBlocks);
     
-    // TODO: Filter notes by viewing key (requires note commitment matching)
-    // For now, we aggregate all notes (in production, filter by viewing key)
+    // Deterministic placeholder filtering based on viewing key
+    const filteredNotes = filterNotesByViewingKey(allNotes, viewingKey);
+    const saplingNotes = filterByPool(filteredNotes, "SAPLING");
+    const orchardNotes = filterByPool(filteredNotes, "ORCHARD");
     
-    const saplingNotes = filterByPool(allNotes, "SAPLING");
-    const orchardNotes = filterByPool(allNotes, "ORCHARD");
-    
-    const { saplingZats, orchardZats } = calculateTotal(allNotes);
+    const { saplingZats, orchardZats } = calculateTotal(filteredNotes);
     
     logger.info(
-      { saplingZats: saplingZats.toString(), orchardZats: orchardZats.toString(), noteCount: allNotes.length },
+      {
+        saplingZats: saplingZats.toString(),
+        orchardZats: orchardZats.toString(),
+        totalNotes: allNotes.length,
+        filteredNotes: filteredNotes.length,
+      },
       "Scanned shielded activity"
     );
     
     return {
       saplingZats,
       orchardZats,
-      notes: allNotes.length,
+      notes: filteredNotes.length,
     };
   } finally {
     client.close();
