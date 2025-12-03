@@ -10,9 +10,14 @@ import { registerMetricsRoutes } from "./routes/metrics.js";
 import { registerWebhookRoutes } from "./routes/webhooks.js";
 import { registerStatsRoutes } from "./routes/stats.js";
 import { startJobProcessor } from "./services/jobProcessor.js";
+import { initializeStorage } from "./services/storage.js";
 
 export async function buildServer() {
   const env = loadEnv();
+  
+  // Initialize storage (PostgreSQL if configured)
+  await initializeStorage();
+  
   const server = Fastify({
     logger,
   });

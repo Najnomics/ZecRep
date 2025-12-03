@@ -32,7 +32,7 @@ export function useTierHistory(
       setLoading(true);
       setError(null);
       try {
-        const data = await client.getTierHistory(address, limit);
+        const data = await client.getTierHistory(address!, limit);
         if (!canceled) {
           setHistory(data);
         }

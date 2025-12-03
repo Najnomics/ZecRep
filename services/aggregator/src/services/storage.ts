@@ -6,6 +6,8 @@
  */
 
 import { logger } from "../lib/logger.js";
+import { loadEnv } from "../config/index.js";
+import { PostgresStorage } from "./postgresStorage.js";
 
 export type StorableJob = {
   id: string;
@@ -167,13 +169,51 @@ class MemoryStorage {
   }
 }
 
-// Singleton instance
-const storage = new MemoryStorage();
+// Singleton instance - use PostgreSQL if configured, otherwise memory
+let storageInstance: IStorage | null = null;
+
+export async function initializeStorage(): Promise<IStorage> {
+  if (storageInstance) {
+    return storageInstance;
+  }
+  
+  const env = loadEnv();
+  
+  if (env.USE_POSTGRES && env.DATABASE_URL) {
+    logger.info("Initializing PostgreSQL storage");
+    const pgStorage = new PostgresStorage(env.DATABASE_URL);
+    await pgStorage.initialize();
+    storageInstance = pgStorage;
+    return pgStorage;
+  }
+  
+  logger.info("Using in-memory storage");
+  storageInstance = new MemoryStorage();
+  return storageInstance;
+}
+
+// Get storage instance - uses initialized instance if available, otherwise memory
+function getStorage(): IStorage {
+  return storageInstance ?? new MemoryStorage();
+}
+
+// Export storage getter for backward compatibility
+const storage = {
+  saveJob: (job: StorableJob) => getStorage().saveJob(job),
+  getJob: (id: string) => getStorage().getJob(id),
+  listJobs: (filters?: { address?: string; status?: string; limit?: number }) => getStorage().listJobs(filters),
+  updateJob: (id: string, updates: Partial<StorableJob>) => getStorage().updateJob(id, updates),
+  saveTier: (tier: StorableTier) => getStorage().saveTier(tier),
+  getTier: (address: string) => getStorage().getTier(address),
+  getTierHistory: (address: string, limit?: number) => getStorage().getTierHistory(address, limit),
+  cleanupOldJobs: (maxAge: number) => getStorage().cleanupOldJobs(maxAge),
+  getStats: () => getStorage().getStats(),
+};
 
 export { storage };
 
 /**
- * Storage interface for future database implementations.
+ * Storage interface for database implementations.
  */
 export interface IStorage {
   saveJob(job: StorableJob): Promise<void>;
@@ -183,5 +223,12 @@ export interface IStorage {
   saveTier(tier: StorableTier): Promise<void>;
   getTier(address: string): Promise<StorableTier | null>;
   getTierHistory(address: string, limit?: number): Promise<StorableTier[]>;
+  cleanupOldJobs(maxAge: number): Promise<number>;
+  getStats(): Promise<{
+    totalJobs: number;
+    jobsByStatus: Record<string, number>;
+    totalTiers: number;
+    tiersByTier: Record<string, number>;
+  }>;
 }
 

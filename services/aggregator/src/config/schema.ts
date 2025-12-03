@@ -9,6 +9,10 @@ export const envSchema = z.object({
   REGISTRY_ADDRESS: z
     .string()
     .regex(/^0x[a-fA-F0-9]{40}$/, "Expected 0x-prefixed 20 byte address"),
+  DATABASE_URL: z.string().url().optional(),
+  USE_POSTGRES: z
+    .union([z.string().transform((val) => val === "true"), z.boolean()])
+    .default(false),
 });
 
 export type Env = z.infer<typeof envSchema>;

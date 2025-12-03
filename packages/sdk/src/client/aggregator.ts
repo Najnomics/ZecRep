@@ -45,7 +45,6 @@ export class AggregatorClient {
         address: input.address,
         viewingKey: input.viewingKey,
         tier: input.tier,
-        proofHash: input.proofHash,
       }),
     });
 
