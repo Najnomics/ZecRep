@@ -1,11 +1,11 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { AggregatorClient } from "@zecrep/sdk/client/aggregator";
-import { ProofWizard } from "../../components/ProofWizard.js";
-import { JobHistory } from "../../components/JobHistory.js";
-import { TierHistory } from "../../components/TierHistory.js";
-import { AGGREGATOR_URL } from "../../lib/constants.js";
+import { AggregatorClient } from "@zecrep/sdk";
+import { ProofWizard } from "../../components/ProofWizard";
+import { JobHistory } from "../../components/JobHistory";
+import { TierHistory } from "../../components/TierHistory";
+import { AGGREGATOR_URL } from "../../lib/constants";
 
 /**
  * ZecRep Console - Main application interface for users to:

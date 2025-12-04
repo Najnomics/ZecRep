@@ -3,12 +3,12 @@ import Fastify, { type FastifyRequest, type FastifyReply } from "fastify";
 import cors from "@fastify/cors";
 import { loadEnv } from "./config.js";
 import { runMockPipeline } from "./pipeline/mockRange.js";
-import { logger } from "./lib/logger.js";
+import { logger, loggerOptions } from "./lib/logger.js";
 
 export async function buildProverServer() {
   const env = loadEnv();
   const server = Fastify({
-    logger,
+    logger: loggerOptions,
   });
 
   await server.register(cors, {
@@ -44,6 +44,7 @@ export async function buildProverServer() {
           encryptedPayload: artifact.encryptedPayload,
           inEuint64: artifact.inEuint64,
           notesScanned: artifact.notesScanned,
+          totalZats: artifact.totalZats,
         },
       };
     } catch (error) {
@@ -77,5 +78,10 @@ export async function buildProverServer() {
   }
 
   return server;
+}
+
+// Auto-start when executed directly
+if (import.meta.url === `file://${process.argv[1]}`) {
+  void buildProverServer();
 }
 

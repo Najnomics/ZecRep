@@ -29,7 +29,7 @@ library ZecRepGuards {
         if (actualTier == 0) {
             revert NotRegistered(account);
         }
-        if (!registry.meetsTier(account, minimumTier)) {
+        if (minimumTier == 0 || actualTier < minimumTier) {
             revert TierTooLow(minimumTier, actualTier);
         }
     }

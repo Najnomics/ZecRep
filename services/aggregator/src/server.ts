@@ -1,7 +1,7 @@
 import Fastify from "fastify";
 import cors from "@fastify/cors";
 import { loadEnv } from "./config/index.js";
-import { logger } from "./lib/logger.js";
+import { logger, loggerOptions } from "./lib/logger.js";
 import { registerHealthRoutes } from "./routes/health.js";
 import { registerTierRoutes } from "./routes/tiers.js";
 import { registerJobRoutes } from "./routes/jobs.js";
@@ -19,7 +19,7 @@ export async function buildServer() {
   await initializeStorage();
   
   const server = Fastify({
-    logger,
+    logger: loggerOptions,
   });
 
   // Start job processor for async proof generation

@@ -10,6 +10,75 @@
 
 ---
 
+## 🤝 Fhenix + Zcash Implementation
+
+- **Zcash**: We derive ZIP-32 unified viewing keys, stream Sapling + Orchard notes via lightwalletd gRPC, cache scans on disk, and turn accumulated zatoshis into Noir range proofs that only reveal which tier band (Bronze–Platinum) a user qualifies for.
+- **Fhenix / Cofhe**: Each range proof output is passed through the Cofhe gateway to produce an `inEuint64` ciphertext. On-chain, `ZecRepRegistry` uses Fhenix’s `FHE.gte` helpers so tier comparisons happen over encrypted data; the exact totals never appear on L1.
+- **Bridge**: The aggregator service binds both worlds—calling the prover for Zcash attestations, calling Cofhe for encryption, and pushing soulbound badge updates + guard hooks to Ethereum protocols.
+
+---
+
+## 🧾 Project Description
+
+ZecRep is a privacy-preserving reputation oracle that lets Zcash users convert shielded-wallet history into an on-chain tier badge any Ethereum protocol can trust. By combining ZK range proofs, FHE comparisons, and a job-oriented aggregator, we unlock credit-style utility for shielded capital without exposing balances or flows.
+
+## ❗ Problem Statement
+
+- Zcash users must reveal their entire shielded history to access DeFi credit lines, governance boosts, or fee rebates.
+- Protocols lack a trustworthy way to measure private capital while staying compliant with on-chain guardrails.
+- Existing identity or reputation systems either leak exact asset amounts or rely on opaque, centralized attesters.
+
+## ✅ Solution Overview
+
+1. **Deterministic Scan + Proof** – The prover scans lightwalletd for Sapling/Orchard notes, memoizes results locally, and generates Noir range proofs that only reveal which ZEC range the user belongs to.
+2. **Encrypted Comparison via FHE** – The range proof output is encrypted with Fhenix Cofhe. Smart contracts run `FHE.gte` comparisons to check tiers without decrypting totals.
+3. **Aggregator + SDK** – A Fastify aggregator orchestrates async jobs, exposes REST + SDK endpoints, enforces guards, and records Prometheus metrics so frontends can monitor job lifecycle.
+4. **Soulbound Badge + Guards** – `ZecRepBadge` mints a non-transferable tier NFT while `ZecRepGuards` give protocols a single `requireTier` hook for gating perks and fee schedules.
+
+---
+
+## 🧭 Flow Charts
+
+### User Journey (Console POV)
+
+```mermaid
+flowchart LR
+    A[Connect Shielded Wallet] --> B[Paste Viewing Key + 0x Address]
+    B --> C[Submit Proof Job via Web Console]
+    C --> D[Aggregator Job Created (202 Accepted)]
+    D --> E[Proof Wizard Polls Job Status]
+    E --> F{Job Completed?}
+    F -- Yes --> G[Encrypted Tier + Proof Hash Returned]
+    G --> H[Badge + Tier Dashboard Updates]
+    F -- Retry/Error --> I[User Sees Error + Retry CTA]
+```
+
+### Technical Pipeline
+
+```mermaid
+flowchart TD
+    VK[Zcash Viewing Key] -->|scanShieldedActivity| P1(Prover Pipeline)
+    subgraph Prover
+        P1 --> C1[Disk Scan Cache]
+        C1 -->|cache miss| LWD[lightwalletd mock/grpc]
+        LWD --> RP[Noir Range Proof]
+        RP --> FHE[Fhenix Cofhe Encrypt]
+        FHE --> Artifact[Proof Artifact (tier, totalZats, cipher)]
+    end
+    Artifact --> AGG[Aggregator Service]
+    subgraph Aggregator
+        AGG --> Storage[(Postgres/Memory Jobs)]
+        AGG --> Metrics[(Prometheus)]
+        AGG --> Webhooks[(Partner Callbacks)]
+    end
+    AGG --> SDK[@zecrep/sdk]
+    SDK --> Web[Next.js Console (useProofWizard)]
+    AGG --> Contracts[ZecRepBadge & Guards]
+    Contracts --> Protocols[DeFi Integrations]
+```
+
+---
+
 ## 📋 Quick Links
 
 - **[Integration Guide](./docs/integration-guide.md)** - For DeFi protocols integrating ZecRep

@@ -20,7 +20,8 @@ export function useWallet() {
     if (typeof window.ethereum !== "undefined") {
       window.ethereum
         .request({ method: "eth_accounts" })
-        .then((accounts: string[]) => {
+        .then((result) => {
+          const accounts = Array.isArray(result) ? (result as string[]) : [];
           if (accounts.length > 0) {
             setState({
               address: accounts[0],
@@ -39,18 +40,24 @@ export function useWallet() {
     }
 
     try {
-      const accounts = await window.ethereum.request({
+      const accountsResult = await window.ethereum.request({
         method: "eth_requestAccounts",
       });
+      const accounts = Array.isArray(accountsResult) ? (accountsResult as string[]) : [];
 
-      const chainId = await window.ethereum.request({
+      const chainIdResult = await window.ethereum.request({
         method: "eth_chainId",
       });
+      const chainId = typeof chainIdResult === "string" ? chainIdResult : "0x0";
+
+      if (accounts.length === 0) {
+        throw new Error("No accounts returned by wallet");
+      }
 
       setState({
         address: accounts[0],
         isConnected: true,
-        chainId: parseInt(chainId as string, 16),
+        chainId: parseInt(chainId, 16),
       });
     } catch (error) {
       console.error("Failed to connect wallet:", error);

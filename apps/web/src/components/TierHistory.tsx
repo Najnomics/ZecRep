@@ -1,7 +1,7 @@
 "use client";
 
-import type { AggregatorClient } from "@zecrep/sdk/client/aggregator";
-import { useTierHistory } from "@zecrep/sdk/hooks/useTierHistory";
+import type { AggregatorClient } from "@zecrep/sdk";
+import { useTierHistory } from "@zecrep/sdk";
 
 interface TierHistoryProps {
   client: AggregatorClient;

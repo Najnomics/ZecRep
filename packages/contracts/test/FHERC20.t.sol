@@ -7,7 +7,7 @@ import { ExampleToken, FHERC20NotAuthorized } from "../src/FHERC20.sol";
 import { FheEnabled } from "../util/FheHelper.sol";
 import { Permission, PermissionHelper } from "../util/PermissionHelper.sol";
 
-import { inEuint128, euint128 } from "@fhenixprotocol/contracts/FHE.sol";
+import { FHE, inEuint128, euint128 } from "@fhenixprotocol/contracts/FHE.sol";
 
 interface IERC20 {
     function balanceOf(address account) external view returns (uint256);
@@ -100,7 +100,7 @@ contract TokenTest is Test, FheEnabled {
 
         inEuint128 memory encryptedTransferValue = encrypt128(transferValue);
         euint128 transferred = token.transferEncrypted(receiver, encryptedTransferValue);
-        assertEq(transferred.decrypt(), transferValue);
+        assertEq(FHE.decrypt(transferred), transferValue);
 
         string memory encryptedBalanceAfterTransfer = token.balanceOfEncrypted(owner, permission);
         uint256 balanceAfterTransfer = unseal(address(token), encryptedBalanceAfterTransfer);

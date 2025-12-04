@@ -8,7 +8,7 @@ pragma solidity ^0.8.25;
 library GasTracker {
     uint256 private constant GAS_START = type(uint256).max;
 
-    function start() internal pure returns (uint256) {
+    function start() internal view returns (uint256) {
         return gasleft();
     }
 

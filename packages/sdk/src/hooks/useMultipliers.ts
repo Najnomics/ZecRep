@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import type { AggregatorClient } from "../client/aggregator.js";
 
 export interface TierMultipliers {
@@ -24,9 +24,10 @@ export function useMultipliers(client: AggregatorClient, address: string | null)
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
 
-  const fetchMultipliers = async () => {
+  const fetchMultipliers = useCallback(async () => {
     if (!address) {
       setMultipliers(null);
+      setLoading(false);
       return;
     }
 
@@ -42,11 +43,11 @@ export function useMultipliers(client: AggregatorClient, address: string | null)
     } finally {
       setLoading(false);
     }
-  };
+  }, [client, address]);
 
   useEffect(() => {
     void fetchMultipliers();
-  }, [address]);
+  }, [fetchMultipliers]);
 
   return {
     multipliers,

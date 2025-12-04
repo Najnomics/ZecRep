@@ -11,6 +11,7 @@ export { RegistryClient, BadgeClient } from "./client/contract.js";
 // Hook exports
 export { useTier } from "./hooks/useTier.js";
 export { useProofWizard } from "./hooks/useProofWizard.js";
+export type { ProofWizardStep, ProofWizardState } from "./hooks/useProofWizard.js";
 export { useJobs } from "./hooks/useJobs.js";
 export { useTierHistory } from "./hooks/useTierHistory.js";
 

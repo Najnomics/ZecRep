@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import type { AggregatorClient } from "../client/aggregator.js";
 import type { TierData } from "../types.js";
 
@@ -17,9 +17,10 @@ export function useTier(client: AggregatorClient, address: string | null): UseTi
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
 
-  const fetchTier = async () => {
+  const fetchTier = useCallback(async () => {
     if (!address) {
       setTier(null);
+      setLoading(false);
       return;
     }
 
@@ -35,11 +36,11 @@ export function useTier(client: AggregatorClient, address: string | null): UseTi
     } finally {
       setLoading(false);
     }
-  };
+  }, [client, address]);
 
   useEffect(() => {
     void fetchTier();
-  }, [address]);
+  }, [fetchTier]);
 
   return {
     tier,

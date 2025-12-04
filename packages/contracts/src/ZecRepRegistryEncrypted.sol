@@ -99,7 +99,7 @@ contract ZecRepRegistryEncrypted is AccessControl, Permissioned {
 
         // Decrypt tier to get score and mint badge
         // Note: In a fully encrypted system, we'd need to decrypt only for badge minting
-        uint8 tier = uint8(encryptedTier.decrypt());
+        uint8 tier = uint8(FHE.decrypt(encryptedTier));
         require(tier >= 1 && tier <= 4, "ZecRepRegistryEncrypted: invalid tier");
 
         // Get score from tier config
@@ -137,7 +137,7 @@ contract ZecRepRegistryEncrypted is AccessControl, Permissioned {
     {
         EncryptedProofRecord memory record = _records[account];
         require(record.encryptedTier.isInitialized(), "ZecRepRegistryEncrypted: no proof");
-        return uint8(record.encryptedTier.decrypt());
+        return uint8(FHE.decrypt(record.encryptedTier));
     }
 }
 

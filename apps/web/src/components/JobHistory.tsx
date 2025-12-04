@@ -1,7 +1,7 @@
 "use client";
 
-import type { AggregatorClient } from "@zecrep/sdk/client/aggregator";
-import { useJobs } from "@zecrep/sdk/hooks/useJobs";
+import type { AggregatorClient } from "@zecrep/sdk";
+import { useJobs } from "@zecrep/sdk";
 
 interface JobHistoryProps {
   client: AggregatorClient;

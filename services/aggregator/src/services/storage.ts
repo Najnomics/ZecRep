@@ -24,6 +24,8 @@ export type StorableJob = {
       data: string;
       securityZone: number;
     };
+    notesScanned?: number;
+    totalZats?: string;
   };
   error?: string;
 };
@@ -194,7 +196,10 @@ export async function initializeStorage(): Promise<IStorage> {
 
 // Get storage instance - uses initialized instance if available, otherwise memory
 function getStorage(): IStorage {
-  return storageInstance ?? new MemoryStorage();
+  if (!storageInstance) {
+    storageInstance = new MemoryStorage();
+  }
+  return storageInstance;
 }
 
 // Export storage getter for backward compatibility

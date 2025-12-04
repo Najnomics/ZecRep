@@ -25,6 +25,7 @@ export function useTierHistory(
       return;
     }
 
+    const currentAddress = address;
     let canceled = false;
     let timer: NodeJS.Timeout | null = null;
 
@@ -32,7 +33,7 @@ export function useTierHistory(
       setLoading(true);
       setError(null);
       try {
-        const data = await client.getTierHistory(address!, limit);
+        const data = await client.getTierHistory(currentAddress, limit);
         if (!canceled) {
           setHistory(data);
         }

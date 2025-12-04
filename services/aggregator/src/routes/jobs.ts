@@ -1,7 +1,7 @@
 import type { FastifyInstance } from "fastify";
 import { createRangeJob, getRangeJob, listRangeJobs } from "../services/jobs.js";
 import type { RangeJobRequest, JobStatus } from "../services/jobs.js";
-import { recordJobCreated, recordJobCompleted } from "../lib/metrics.js";
+import { recordJobCreated } from "../lib/metrics.js";
 
 /**
  * Job management routes for range proof orchestration.

@@ -2,14 +2,23 @@ import { fetch } from "undici";
 import type { ProverEnv } from "../config.js";
 import type { ScanResult } from "../pipeline/scan.js";
 import { LightwalletdClient } from "./lightwalletdClient.js";
-import { parseCompactBlock, aggregateNotes, calculateTotal, filterByPool } from "./compactBlockParser.js";
+import { parseCompactBlock, aggregateNotes, calculateTotal } from "./compactBlockParser.js";
 import { filterNotesByViewingKey } from "./noteFilter.js";
 import { logger } from "../lib/logger.js";
+
+type ShieldedScanOptions = {
+  blockRange?: number;
+  startHeight?: number;
+};
 
 /**
  * Fetch shielded totals using real gRPC client or fallback to mock.
  */
-export async function fetchShieldedTotals(env: ProverEnv, viewingKey: string): Promise<ScanResult> {
+export async function fetchShieldedTotals(
+  env: ProverEnv,
+  viewingKey: string,
+  options: ShieldedScanOptions = {}
+): Promise<ScanResult> {
   // Use mock endpoint if explicitly configured
   if (env.LIGHTWALLETD_URL.includes("mock") || !env.ENABLE_GRPC) {
     if (env.LIGHTWALLETD_URL.includes("mock")) {
@@ -37,12 +46,28 @@ export async function fetchShieldedTotals(env: ProverEnv, viewingKey: string): P
     // Get chain info to determine scan range
     const info = await client.getLightdInfo();
     const currentHeight = info.blockHeight || info.chainLength || 0;
+
+    const blockRange = options.blockRange ?? 1000;
+    const requestedStart = Math.max(
+      0,
+      options.startHeight ?? currentHeight - blockRange
+    );
+    const requestedEnd =
+      options.startHeight !== undefined
+        ? Math.min(currentHeight, options.startHeight + blockRange)
+        : currentHeight;
+    const startHeight = Math.min(requestedStart, requestedEnd);
+    const endHeight = Math.max(startHeight, requestedEnd);
     
-    // Scan last 1000 blocks (adjustable via config)
-    const startHeight = Math.max(0, currentHeight - 1000);
-    const endHeight = currentHeight;
-    
-    logger.info({ startHeight, endHeight, viewingKey: viewingKey.slice(0, 10) }, "Scanning block range via gRPC");
+    logger.info(
+      {
+        startHeight,
+        endHeight,
+        range: blockRange,
+        viewingKey: viewingKey.slice(0, 10),
+      },
+      "Scanning block range via gRPC"
+    );
     
     // Fetch compact blocks
     const blocks = await client.getBlockRange(startHeight, endHeight);
@@ -53,9 +78,6 @@ export async function fetchShieldedTotals(env: ProverEnv, viewingKey: string): P
     
     // Deterministic placeholder filtering based on viewing key
     const filteredNotes = filterNotesByViewingKey(allNotes, viewingKey);
-    const saplingNotes = filterByPool(filteredNotes, "SAPLING");
-    const orchardNotes = filterByPool(filteredNotes, "ORCHARD");
-    
     const { saplingZats, orchardZats } = calculateTotal(filteredNotes);
     
     logger.info(

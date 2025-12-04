@@ -29,6 +29,8 @@ export type RangeJob = {
       data: string;
       securityZone: number;
     };
+    notesScanned?: number;
+    totalZats?: string;
   };
   error?: string;
 };
@@ -36,6 +38,7 @@ export type RangeJob = {
 export type ProofInput = {
   address: string;
   viewingKey: string;
-  tier: TierLevel;
+  tier?: TierLevel;
+  proofHash?: string;
 };
 

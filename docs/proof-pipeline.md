@@ -14,6 +14,7 @@ Guiding choices for the ZecRep prover implementation so we can deliver an end‑
   - derive unified viewing keys via ZIP-32 (see `CONTEXT/zip32`); a placeholder helper currently lives at `packages/prover/src/zip32/viewingKey.ts`.
   - call `GetBlockRange` + `GetAddressUtxos` to aggregate the user’s totals without exposing spend keys;
   - cache results locally to avoid rescanning on every proof request.
+  - memoize recent scans on disk (`packages/prover/src/pipeline/cache.ts`) so repeated proofs reuse the last successful block range within a configurable TTL (`SCAN_CACHE_TTL_MS`).
 
 ## Encryption layer
 

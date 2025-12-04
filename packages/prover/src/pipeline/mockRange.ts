@@ -16,6 +16,7 @@ export type ProofArtifact = {
   encryptedPayload: string;
   inEuint64: InEuint64;
   notesScanned: number;
+  totalZats: string;
   witness: Awaited<ReturnType<typeof generateRangeProof>>["witness"];
 };
 
@@ -23,6 +24,7 @@ export async function runMockPipeline(input: ProofInput, env: ProverEnv): Promis
   const scan = await scanShieldedActivity(input.viewingKey, env);
   const proof = await generateRangeProof(scan);
   const encryption = await encryptRangeResult(proof, env);
+  const totalZats = proof.witness.total_zats;
 
   return {
     address: input.address,
@@ -31,6 +33,7 @@ export async function runMockPipeline(input: ProofInput, env: ProverEnv): Promis
     encryptedPayload: encryption.encryptedPayload,
     inEuint64: encryption.inEuint64,
     notesScanned: scan.notes,
+    totalZats,
     witness: proof.witness,
   };
 }

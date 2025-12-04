@@ -44,7 +44,8 @@ export class AggregatorClient {
       body: JSON.stringify({
         address: input.address,
         viewingKey: input.viewingKey,
-        tier: input.tier,
+        ...(input.tier ? { tier: input.tier } : {}),
+        ...(input.proofHash ? { proofHash: input.proofHash } : {}),
       }),
     });
 

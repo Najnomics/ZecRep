@@ -13,6 +13,8 @@ import { logger } from "../lib/logger.js";
 import { storage, type StorableJob } from "./storage.js";
 import { triggerWebhooks } from "../routes/webhooks.js";
 import { loadEnv } from "../config/index.js";
+import { tierScoreMap } from "./tiers.js";
+import { recordJobCompleted } from "../lib/metrics.js";
 
 export type JobProcessorOptions = {
   encryptionTimeout?: number;
@@ -30,8 +32,9 @@ export async function processRangeJob(
 
   logger.info({ jobId }, "Starting job processing");
 
+  let job: StorableJob | null = null;
   try {
-    const job = await storage.getJob(jobId);
+    job = await storage.getJob(jobId);
     if (!job) {
       throw new Error(`Job not found: ${jobId}`);
     }
@@ -67,12 +70,15 @@ export async function processRangeJob(
         encryptedPayload: string;
         inEuint64: { data: string; securityZone: number };
         notesScanned: number;
+        totalZats?: string;
       };
     };
 
     if (!proverResult.success || !proverResult.artifact) {
       throw new Error("Prover returned unsuccessful result");
     }
+
+    const totalZats = proverResult.artifact.totalZats ?? "0";
 
     // Update job with prover result
     await storage.updateJob(jobId, {
@@ -82,6 +88,8 @@ export async function processRangeJob(
       result: {
         encryptedPayload: proverResult.artifact.encryptedPayload,
         inEuint64: proverResult.artifact.inEuint64,
+        notesScanned: proverResult.artifact.notesScanned,
+        totalZats,
       },
     });
 
@@ -89,12 +97,38 @@ export async function processRangeJob(
 
     // Get updated job to access final tier/proofHash
     const completedJob = await storage.getJob(jobId);
-    if (completedJob) {
+      if (completedJob) {
+        const tierKey = completedJob.tier.toUpperCase();
+        const encryptedTotal = completedJob.result?.inEuint64?.data ?? "0x";
+        let volumeZats = 0;
+        const totalZatsRaw = completedJob.result?.totalZats;
+
+        if (totalZatsRaw) {
+          try {
+            volumeZats = Number(BigInt(totalZatsRaw));
+          } catch (error) {
+            logger.warn({ error, jobId }, "Failed to parse totalZats for tier history");
+          }
+        }
+
+        await storage.saveTier({
+          address: completedJob.address,
+          tier: completedJob.tier,
+          score: tierScoreMap[tierKey] ?? 0,
+          encryptedTotal,
+          volumeZats,
+          updatedAt: new Date().toISOString(),
+        });
+
+      const durationSeconds =
+        (Date.now() - new Date(completedJob.submittedAt).getTime()) / 1000;
+      recordJobCompleted(completedJob.tier, durationSeconds, "completed");
+
       // Trigger webhook if tier upgrade
       await triggerWebhooks("badge_minted", {
         address: completedJob.address,
         newTier: completedJob.tier,
-        score: 500, // TODO: Get from tier config
+        score: tierScoreMap[tierKey] ?? 0,
         proofHash: completedJob.proofHash,
       });
     }
@@ -105,6 +139,11 @@ export async function processRangeJob(
       status: "failed",
       error: error instanceof Error ? error.message : "Unknown error",
     });
+
+    if (job) {
+      const durationSeconds = (Date.now() - new Date(job.submittedAt).getTime()) / 1000;
+      recordJobCompleted(job.tier, durationSeconds, "failed");
+    }
   }
 }
 

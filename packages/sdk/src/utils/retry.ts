@@ -27,7 +27,7 @@ export async function retry<T>(
     ...options,
   };
 
-  let lastError: Error;
+  let lastError: Error | null = null;
 
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     try {
@@ -44,12 +44,15 @@ export async function retry<T>(
       }
 
       // Exponential backoff
-      const waitTime = delay * Math.pow(backoff, attempt - 1);
+      const waitTime = delay * backoff ** (attempt - 1);
       await new Promise((resolve) => setTimeout(resolve, waitTime));
     }
   }
 
-  throw lastError!;
+  if (lastError) {
+    throw lastError;
+  }
+  throw new Error("Retry failed without throwing");
 }
 
 /**
@@ -65,7 +68,7 @@ export async function retryOnErrors<T>(
     ...options,
   };
 
-  let lastError: Error;
+  let lastError: Error | null = null;
 
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     try {
@@ -86,11 +89,14 @@ export async function retryOnErrors<T>(
         onRetry(attempt, lastError);
       }
 
-      const waitTime = delay * Math.pow(backoff, attempt - 1);
+      const waitTime = delay * backoff ** (attempt - 1);
       await new Promise((resolve) => setTimeout(resolve, waitTime));
     }
   }
 
-  throw lastError!;
+  if (lastError) {
+    throw lastError;
+  }
+  throw new Error("Retry failed without throwing");
 }
 

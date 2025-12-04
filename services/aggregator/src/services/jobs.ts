@@ -2,8 +2,6 @@ import crypto from "node:crypto";
 import { z } from "zod";
 import { storage } from "./storage.js";
 import type { StorableJob } from "./storage.js";
-import { recordJobCompleted } from "../lib/metrics.js";
-import { tierScoreMap } from "./tiers.js";
 
 /**
  * Range proof job orchestration for ZecRep.
@@ -30,7 +28,12 @@ export type RangeJobRequest = z.infer<typeof RangeJobSchema>;
 
 export type JobStatus = "pending" | "processing" | "completed" | "failed";
 
-export type RangeJob = StorableJob;
+export type RangeJob = Omit<StorableJob, "viewingKey">;
+
+function stripSensitive(job: StorableJob): RangeJob {
+  const { viewingKey: _vk, ...rest } = job;
+  return rest;
+}
 
 /**
  * Creates a new range proof job.
@@ -55,14 +58,12 @@ export async function createRangeJob(input: RangeJobRequest): Promise<RangeJob> 
 
   await storage.saveJob(job);
 
-  // Job processor will handle async processing
-  // No need for setTimeout - processor polls pending jobs
-
-  return job;
+  return stripSensitive(job);
 }
 
 export async function getRangeJob(id: string): Promise<RangeJob | null> {
-  return storage.getJob(id);
+  const job = await storage.getJob(id);
+  return job ? stripSensitive(job) : null;
 }
 
 export async function listRangeJobs(filters?: {
@@ -70,7 +71,8 @@ export async function listRangeJobs(filters?: {
   status?: JobStatus;
   limit?: number;
 }): Promise<RangeJob[]> {
-  return storage.listJobs(filters);
+  const jobs = await storage.listJobs(filters);
+  return jobs.map((job) => stripSensitive(job));
 }
 
 export async function updateJobStatus(

@@ -19,6 +19,7 @@ describe("runMockPipeline", () => {
     expect(["BRONZE", "SILVER", "GOLD", "PLATINUM"]).toContain(artifact.tier);
     expect(artifact.encryptedPayload).toContain("fhe://");
     expect(artifact.notesScanned).toBeGreaterThanOrEqual(0);
+    expect(BigInt(artifact.totalZats)).toBeGreaterThanOrEqual(0n);
     expect(artifact.witness.total_zats).toBeDefined();
   });
 });
