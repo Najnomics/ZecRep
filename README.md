@@ -43,38 +43,38 @@ ZecRep is a privacy-preserving reputation oracle that lets Zcash users convert s
 
 ```mermaid
 flowchart LR
-    A[Connect Shielded Wallet] --> B[Paste Viewing Key + 0x Address]
-    B --> C[Submit Proof Job via Web Console]
-    C --> D[Aggregator Job Created (202 Accepted)]
-    D --> E[Proof Wizard Polls Job Status]
+    A["Connect Shielded Wallet"] --> B["Paste Viewing Key + 0x Address"]
+    B --> C["Submit Proof Job via Web Console"]
+    C --> D["Aggregator Job Created (202 Accepted)"]
+    D --> E["Proof Wizard Polls Job Status"]
     E --> F{Job Completed?}
-    F -- Yes --> G[Encrypted Tier + Proof Hash Returned]
-    G --> H[Badge + Tier Dashboard Updates]
-    F -- Retry/Error --> I[User Sees Error + Retry CTA]
+    F -- Yes --> G["Encrypted Tier + Proof Hash Returned"]
+    G --> H["Badge + Tier Dashboard Updates"]
+    F -- Retry/Error --> I["User Sees Error + Retry CTA"]
 ```
 
 ### Technical Pipeline
 
 ```mermaid
 flowchart TD
-    VK[Zcash Viewing Key] -->|scanShieldedActivity| P1(Prover Pipeline)
+    VK["Zcash Viewing Key"] -->|scanShieldedActivity| P1["Prover Pipeline"]
     subgraph Prover
-        P1 --> C1[Disk Scan Cache]
-        C1 -->|cache miss| LWD[lightwalletd mock/grpc]
-        LWD --> RP[Noir Range Proof]
-        RP --> FHE[Fhenix Cofhe Encrypt]
-        FHE --> Artifact[Proof Artifact (tier, totalZats, cipher)]
+        P1 --> C1["Disk Scan Cache"]
+        C1 -->|cache miss| LWD["lightwalletd mock/grpc"]
+        LWD --> RP["Noir Range Proof"]
+        RP --> FHE["Fhenix Cofhe Encrypt"]
+        FHE --> Artifact["Proof Artifact (tier, totalZats, cipher)"]
     end
-    Artifact --> AGG[Aggregator Service]
+    Artifact --> AGG["Aggregator Service"]
     subgraph Aggregator
-        AGG --> Storage[(Postgres/Memory Jobs)]
-        AGG --> Metrics[(Prometheus)]
-        AGG --> Webhooks[(Partner Callbacks)]
+        AGG --> Storage["(Postgres/Memory Jobs)"]
+        AGG --> Metrics["(Prometheus)"]
+        AGG --> Webhooks["(Partner Callbacks)"]
     end
-    AGG --> SDK[@zecrep/sdk]
-    SDK --> Web[Next.js Console (useProofWizard)]
-    AGG --> Contracts[ZecRepBadge & Guards]
-    Contracts --> Protocols[DeFi Integrations]
+    AGG --> SDK["@zecrep/sdk"]
+    SDK --> Web["Next.js Console (useProofWizard)"]
+    AGG --> Contracts["ZecRepBadge & Guards"]
+    Contracts --> Protocols["DeFi Integrations"]
 ```
 
 ---
